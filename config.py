@@ -4,18 +4,18 @@ Revise the attributes to run main.py.
 
 # Data attributes. For simplicity, we only select numerical features for learning. 
 datapath = './data/train.csv'
-feature_label_list = ['policy_tenure',
-                        'age_of_car',
-                        'age_of_policyholder',
-                        'population_density',
-                        'make',
-                        'airbags',
-                        'displacement',
-                        'cylinder',
-                        'gear_box',
-                        'turning_radius','length',
-                        'width', 'height', 'gross_weight', 'ncap_rating'
-                        ]
+feature_names = ['policy_tenure',
+                'age_of_car',
+                'age_of_policyholder',
+                'population_density',
+                'make',
+                'airbags',
+                'displacement',
+                'cylinder',
+                'gear_box',
+                'turning_radius','length',
+                'width', 'height', 'gross_weight', 'ncap_rating']
+label_names = ['is_claim']
 train_test_split_ratio = [0.001, 0.999]
 
 

@@ -5,13 +5,24 @@ import model.knn_classifier as mKNN
 import model.naive_decision_tree_classifer as mDT
 import model.pruned_decision_tree_classifer as mPDT
 
+data = utils.Dataset()
+data.load(cfg.datapath)
+data.preprocess()
+train_data, test_data = data.split_in_ratio()
+
+clf = Classifier()
+clf.train(train_data)
+clf.show_feature_importance_of_data(train_data)
+clf.test(test_data)
+clf.k_fold_cross_validation(data)
+
 
 
 '''
 STAGE1: Setup data and classifier
 '''
-# Generate the data.
 X_train, X_test, Y_train, Y_test = utils.gen_train_test_data(cfg.datapath, cfg.train_test_split_ratio)
+
 # Preprocess the data.
 X_train_normalized = utils.do_minMaxNormalization(X_train)
 X_test_normalized = utils.do_minMaxNormalization(X_test)
@@ -26,7 +37,7 @@ clf = mLC.LinearClassifier(num_features = X_train.shape[1])
 
 '''
 STAGE2: Feature engineering
-'''
+
 # Fit the classifier.
 clf.fit(X_train_normalized, Y_train)
 
@@ -40,12 +51,4 @@ utils.save_bar_chart(filename +'.png', cfg.feature_label_list, feature_importanc
 
 
 # Implement SHAP
-
-
-
-
 '''
-STAGE3: Train classifers w/(o) k-fold cross validation
-'''
-# generate data
-

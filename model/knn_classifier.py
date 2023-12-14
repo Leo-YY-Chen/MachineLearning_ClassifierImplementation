@@ -1,84 +1,69 @@
-import numpy as np
-from datetime import datetime
-from sklearn.model_selection import train_test_split, KFold
 import sys
 sys.path.append('..')
-import function as fn
+import utils
+import numpy as np
 from tqdm import tqdm
+import classifier as clf
 
-class KNNClassifier():
-    def __init__(self, n_neighbor=3, metric='minkowski', p=2):
-        # param for model construction
-        self.metric = metric
-        self.p = p
-        self.n_neighbor = n_neighbor
+class KNNClassifier(clf.Classifier):
+    def __init__(self, n_neighbor=3, p_norm=2):
+        super().__init__()
+        self.name = 'KNN'
+        self.hyper_parameters = {'p_norm': p_norm, 'n_neighbor': n_neighbor}
 
-        # param for coding convinience
-        self.X_train = []
-        self.Y_train = []
-        self.model_name = 'KNN'
-        self.time = datetime.now().strftime('%Y%m%d_%H%M%S')
-
-    def fit(self, X, Y):
-        # Fit the model by input training data (X, Y)
-        self.X_train = X
-        self.Y_train = Y
+    def train(self, data): # data: Dataset()
+        self.update_weights(data)
+        self.accuracy = 1 # This is equvelent to self.calculate_and_set_accuracy(data)
         return None
 
-    def distance(self, x_test):
-        # Calculate Minkwoski distance between (x_test, X_train) by power (self.p) 
-        dist = np.linalg.norm(self.X_train-x_test, ord=self.p, axis=1)     
-        return dist
+    def test(self, data): 
+        if self.weights == None:
+            raise NameError('Train KNN before testing!')
+        self.set_accuracy(data)
+        return None
 
-    def pred(self, X_test, Y_test):
-        # Make a prediction (self.output) by the model and input testing data (X,Y)
-        X_pred = []
-        for i in tqdm(range(X_test.shape[0])):
-            x = X_test[i,:]
-            x_dist = self.distance(x)
-            x_neighbor_id = np.argsort(x_dist)[:self.n_neighbor]
-            x_pred = 1 if np.sum(self.Y_train[x_neighbor_id]) > 0 else -1
-            X_pred.append(x_pred)
+    def update_weights(self, data):
+        self.weights = {"features":data.features, "labels":data.labels}
+        return None
 
-        # Calculate the result (acc)
-        acc = np.sum(X_pred == Y_test) / Y_test.shape[0]
-        return acc
-
-    def train(self, X_train, X_valid, Y_train, Y_valid, k_fold=1, k_fold_iter=0):
-        # Given (epoch) number, train and valid the model by (X_train, X_valid, Y_train, Y_valid)
-        self.fit(X_train, Y_train)
-        acc = self.pred(X_valid, Y_valid)
-        print(f"valid_acc = {acc}")
-
-        # Save the acc
-        tag = f'kfold{k_fold}-{k_fold_iter}'
-        filepath = f'{self.model_name}_{tag}_{self.time}'
-        lists = {"acc":acc}
-        fn.save_dict('../results/acc_loss_lists/' + filepath + '.csv', lists)
-        
-        # Save the model
-        param = {"metric":self.metric, "p":self.p, "n_neighbor":self.n_neighbor}
-        fn.save_dict('./checkpoint/' + filepath + '.csv', param)
-
-    def train_k_fold(self, X, Y, k_fold = 3):
-        kf = KFold(n_splits=k_fold, random_state=83, shuffle=True)
-        for i, (train_index, valid_index) in enumerate(kf.split(X,y=Y)):
-            print(f"Fold {i}:")
-            self.train( X[train_index], X[valid_index], Y[train_index], Y[valid_index], k_fold=k_fold, k_fold_iter=i)
+    def predict_labels(self, data):
+        labels = [self.predict_a_label(data.features[id,:]) for id in range(data.features.shape[0])]
+        return labels
+    
 
 
-if __name__ == '__main__': 
-    X = np.random.randn(6,8)
-    Y = np.random.randn(6,)
+    def predict_a_label(self, a_feature):
+        distances = self.calcualte_distances(a_feature)
+        indices = self.get_neighbors_indices(distances)
+        label = self.get_major_label_of_neighbors(indices)
+        return label
+    
+    def get_neighbors_indices(self, distances_to_neighbors):
+        indices = np.argsort(distances_to_neighbors)[:self.hyper_parameters['n_neighbor']]
+        return indices
+
+    def get_major_label_of_neighbors(self, indices_of_neighbor):
+        major_label = 1 if np.sum(self.weights['labels'][indices_of_neighbor]) >= 0 else -1
+        return major_label
+    
+    def calcualte_distances(self, the_feature):
+        features = self.weights['features']
+        distance = np.linalg.norm(features - the_feature,
+                                  ord=self.hyper_parameters['p_norm'], 
+                                  axis=1)     
+        return distance
+    
+
+    
+
+if __name__ == '__main__':
+    X = np.random.randn(10000,8)
+    Y = np.random.randn(10000,)
     Y[Y>=0] = 1
     Y[Y<0] = -1
-    #print(f"X = {X}")
-    #print(f"Y = {Y}")
-    x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=83)
-    #print(x_test.shape)
 
-    cls = KNNClassifier()
-    cls.train(x_train, x_test, y_train, y_test)
+    dataset = utils.Dataset(X, Y)
+    train_data, test_data = dataset.split_in_ratio()
 
-    cls2 = KNNClassifier()
-    cls2.train_k_fold(X, Y)
+    knn = KNNClassifier()
+    knn.k_fold_cross_validation(dataset)

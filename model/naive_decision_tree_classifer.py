@@ -1,31 +1,33 @@
 import numpy as np
-from datetime import datetime
-from sklearn.model_selection import train_test_split, KFold
 import sys
 sys.path.append('..')
-import function as fn
-from statistics import mode
-
-
+import utils
+import classifier as clf
+'''
 class Treenode():
     def __init__(self, X, Y, max_leaf_entrpoy, max_leaf_size, max_tree_depth, depth=1):
         # Samples in the node
         self.X = X
         self.Y = Y
         self.dominant_label = 0
-        
         # Attributes for create the leaves
+        self.max_leaf_entrpoy = max_leaf_entrpoy
         self.feature_idx = 0
         self.feature_median = 0
-        self.entropy = self.calculate_entropy(self.Y)
-        self.max_leaf_entrpoy = max_leaf_entrpoy
         self.left = None
         self.right = None
-
         # Pre-pruning attributes 
         self.depth = depth
         self.max_leaf_size = max_leaf_size
         self.max_tree_depth= max_tree_depth
+
+
+        self.label = 0
+        self.entropy = self.calculate_entropy(self.Y)
+        self.rules_of_building_children = {'feature_index':None, 'feature_median':None}
+        self.left_child = None  # bulid with datatset whose feature value > feature_median
+        self.right_child = None # bulid with datatset whose feature value <= feature_median
+        
 
     def calculate_entropy(self, labels):
         label_list = list(set(labels))
@@ -33,15 +35,12 @@ class Treenode():
         label_entropy_list = [(0 if prob==0 else prob*np.log(prob)) for prob in label_prob_list]
         entropy = -np.sum(label_entropy_list)
         return entropy
-    
+
     def grow_tree(self):
         # For each node, check the (self.dominant_label, self.entropy) by the train data (X, Y)
         self.dominant_label = mode(self.Y)
         if self.entropy <= self.max_leaf_entrpoy:
             return None 
-        # print(f"depth = {self.depth}")
-        # print(f"num_samples = {self.Y.shape[0]}")
-        # print(f"self.dominant_label={self.dominant_label}")
 
         # Pre-pruning the tree by (self.max_leaf_size, self.max_tree_depth)
         if self.Y.shape[0] < self.max_leaf_size:
@@ -88,88 +87,41 @@ class Treenode():
 
         # Recursively traverse the tree
         self.left.traverse_tree(self.left.X, self.left.Y)
-        self.right.traverse_tree(self.right.X, self.right.Y)
+        self.right.traverse_tree(self.right.X, self.right.Y)'''
 
-
-
-class DTClassifier():
-    def __init__(self, max_leaf_entrpoy=0.2, max_leaf_size = 10, max_tree_depth=10):
-        # param for model construction
-        # max_leaf_entrpoy: the maximum of entropy in each leaves
-        # max_leaf_size: the maximum of samples in each leaves
-        # max_tree_depth: the maximum of depth of the tree
-        self.max_leaf_entrpoy = max_leaf_entrpoy
-        self.max_leaf_size = max_leaf_size 
-        self.max_tree_depth = max_tree_depth
+class DTClassifier(clf.Classifier):
+    def __init__(self, max_leaf_impurity=0.2, max_samples_leaf = 10, max_tree_depth=10):
+        super().__init__()
+        self.hyper_parameters = {'max_leaf_impurity':max_leaf_impurity, # the maximum of entropy in each leaves
+                                 'max_samples_leaf':max_samples_leaf,   # the maximum required samples in each leaves
+                                 'max_tree_depth':max_tree_depth}       # the maximum of depth of the tree
+        self.name = 'DT'
         self.root = None
 
-        # param for coding convinience
-        self.model_name = 'DT'
-        self.time = datetime.now().strftime('%Y%m%d_%H%M%S')
-
-    def fit(self, X, Y):
-        # Given train data (X, Y), construct the tree by recursively splitting
-        self.root = Treenode(X, Y, self.max_leaf_entrpoy, self.max_leaf_size, self.max_tree_depth)
-        self.root.grow_tree()
-
-        # Calculate the accuracy (train_acc)
-        true_pred = self.find_leaf_and_cal_acc(self.root, 0)
-        train_acc = true_pred/Y.shape[0]
-        return train_acc
-        
-    def pred(self, X_test, Y_test):
-        # Predict the test data by the trained tree
-        self.root.traverse_tree(X_test, Y_test)
-        true_pred = self.find_leaf_and_cal_acc(self.root, 0)
-        train_acc = true_pred/Y_test.shape[0]
-        return train_acc
-
-    def find_leaf_and_cal_acc(self, node, true_pred):
-        if node.left == None:
-            true_pred = np.sum(node.Y == node.dominant_label)
-            return true_pred
-        else:
-            true_pred = true_pred + self.find_leaf_and_cal_acc(node.left, 0)
-            true_pred = true_pred + self.find_leaf_and_cal_acc(node.right, 0)
-            return true_pred
+    def update_weights(self, dataset):
+        self.weights = {"features":dataset.features, "labels":dataset.labels}
+        self.root = utils.DecisionTreeNode(**self.hyper_parameters)
+        self.root.build_the_tree(dataset)
+        return None
     
-    def train(self, X_train, X_valid, Y_train, Y_valid, k_fold=1, k_fold_iter=0):
-        # Train and valid the model by (X_train, X_valid, Y_train, Y_valid)
-        train_acc = self.fit(X_train, Y_train)
-        valid_acc = self.pred(X_valid, Y_valid)
-        print(f"train_acc = {train_acc}, valid_acc = {valid_acc}")
+    def predict_labels(self, dataset):
+        labels = self.root.predict_labels(dataset)
+        return labels
 
-        # Save the acc
-        tag = f'kfold{k_fold}-{k_fold_iter}'
-        filepath = f'{self.model_name}_{tag}_{self.time}'
-        lists = {"train_acc":train_acc, "valid_acc":valid_acc}
-        fn.save_dict('../results/acc_loss_lists/' + filepath + '.csv', lists)
-
-        # Save the model
-        param = {"X_train":X_train, 
-                 "Y_train":Y_train, 
-                 "max_leaf_entrpoy": self.max_leaf_entrpoy,
-                 "max_leaf_size":self.max_leaf_size, 
-                 "max_tree_depth":self.max_tree_depth}
-        fn.save_dict('./checkpoint/' + filepath + '.csv', param)
-
-    def train_k_fold(self, X, Y, k_fold = 3):
-        kf = KFold(n_splits=k_fold, random_state=83, shuffle=True)
-        for i, (train_index, valid_index) in enumerate(kf.split(X,y=Y)):
-            print(f"Fold {i}:")
-            self.train( X[train_index], X[valid_index], Y[train_index], Y[valid_index], k_fold=k_fold, k_fold_iter=i)
-
+    def test(self, data): 
+        if self.weights == None:
+            raise NameError('Train Decision Tree before testing!')
+        self.set_accuracy(data)
+        return None
 
 if __name__ == '__main__': 
     X = np.random.randn(30,8)
     Y = np.random.randn(30,)
     Y[Y>=0] = 1
     Y[Y<0] = -1
-    #print(f"X = {X}")
-    #print(f"Y = {Y}")
-    x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=83)
-    print(y_test.shape)
+    
+    dataset = utils.Dataset(X, Y)
+    train_data, test_data = dataset.split_in_ratio()
 
-    cls = DTClassifier()
-    cls.train(x_train, x_test, y_train, y_test)
-    cls.train_k_fold(X,Y)
+    dt = DTClassifier()
+    dt.k_fold_cross_validation(dataset)

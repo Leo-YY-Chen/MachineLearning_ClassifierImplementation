@@ -1,0 +1,2 @@
+hyper_parameters,weights
+"{'max_leaf_impurity': 0.2, 'max_samples_leaf': 10, 'max_tree_depth': 10}",{'train_data': None}

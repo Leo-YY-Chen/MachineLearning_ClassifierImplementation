@@ -1,103 +1,130 @@
 import numpy as np
-from sklearn.model_selection import train_test_split, KFold
-from datetime import datetime
 import sys
 sys.path.append('..')
-import function as fn
+import utils
+import classifier as clf
 
 
 ## create linear classifier
-class LinearClassifier():
-    def __init__(self, num_features, lr=0.001):
-        # param for model construction
-        self.w = np.random.randn(num_features+1)
-        self.lr = lr
+class LinearClassifier(clf.Classifier):
+    def __init__(self, num_features, lr=0.001, epoch = 50):
+        super().__init__()
+        self.weights = {'w': np.random.rand(num_features+1)}
+        self.hyper_parameters = {'lr': lr, 'epoch':epoch}
+        self.name = 'LC'
 
-        # param for coding convinience
-        self.X = []
-        self.output = 0
-        self.model_name = 'LC'
-        self.time = datetime.now().strftime('%Y%m%d_%H%M%S')
-
-    def pred(self, X, Y):
-        # Make a prediction (self.output) by the model and input (X,Y)  
-        self.X = np.append(X, np.ones([X.shape[0], 1]), axis=1)
-        Xw = np.dot(self.X, self.w)
-        self.output = np.ones(Xw.shape)
-        self.output[Xw < 0] = -1
-
-        # Calculate the results (acc, loss)
-        # where loss = Summation_over_mispred_x(delta_x * x^T * w) and delta_x:= 1 if (label_x is mispred as 1) else -1
-        Y = np.squeeze(Y)
-        acc = np.sum(self.output == Y) / Y.shape[0]
-        loss = np.dot(self.output[self.output != Y], Xw[self.output != Y])
-        return acc, loss
-
-    def update_weight(self, X, Y):
-        # Make a prediction (self.output) by the model and input (X,Y)
-        self.pred(X, Y)
-        # Update the model weights
-        # ref: p9, p10 in https://dmi.unibas.ch/fileadmin/user_upload/dmi/Studium/Computer_Science/Vorlesung_HS19/Pattern_Recongnition/06_Linear_Classifier_1_2.pdf
-        self.w = self.w - self.lr * np.sum(self.X[self.output != Y, :], axis=0)
+    def train_valid_then_show_and_save_results(self, train_data, test_data, filename_tag='temp'): 
+        self.set_and_save_filename(filename_tag)
+        for i in range(self.hyper_parameters['epoch']):
+            self.train_in_a_epoch(train_data)
+            self.valid_in_a_epoch(test_data)
+            self.show_and_save_results()
+        self.show_and_save_plots()
+        self.save_model()
         return None
     
-    def fit(self, X, Y, epoch = 50):
-        for j in range(epoch):
-            self.update_weight(X,Y)           
+    def train_in_a_epoch(self, train_data):
+        super().train(train_data)
+        self.set_iteration_results(tag='train')
+        return None
+    
+    def valid_in_a_epoch(self, valid_data):
+        self.test(valid_data)
+        self.set_iteration_results(tag='valid')
         return None
 
-    def train(self, X_train, X_valid, Y_train, Y_valid, epoch = 50, k_fold=1, k_fold_iter=0):
-        # Given (epoch) number, train and valid the model by (X_train, X_valid, Y_train, Y_valid)
-        train_acc_list, train_loss_list = [], []
-        valid_acc_list, valid_loss_list = [], []
-        min_valid_loss = 9999999999999999999
-        for j in range(epoch):
-                # train, valid, and show results (acc, loss)
-                print(f"Epoch:{j+1}/{epoch}")
-                train_acc, train_loss = self.update_weight(X_train,Y_train)
-                valid_acc, valid_loss = self.pred(X_valid,Y_valid)
-                print(f" train_acc = {train_acc}, train_loss = {train_loss}, valid_acc = {valid_acc}, valid_loss = {valid_loss}, lr = {self.lr}")
-                
-                # Params for saving results (acc, loss) and setting model checkpoint by (w, lr)
-                train_acc_list.append(train_acc)
-                train_loss_list.append(train_loss)
-                valid_acc_list.append(valid_acc)
-                valid_loss_list.append(valid_loss)                
-                tag = f'epoch{epoch}_kfold{k_fold}-{k_fold_iter}'
-                filepath = f'{self.model_name}_{tag}_{self.time}'
-                
-                # Save the model checkpoint (epoch, w, lr)
-                if valid_loss <= min_valid_loss:
-                    min_valid_loss = valid_loss
-                    param = {"epoch": j+1, "w": self.w, "lr": self.lr}
-                    fn.save_dict('./checkpoint/' + filepath + '.csv', param)
+    def train_then_show_and_save_results(self, data, filename_tag='temp'): 
+        self.set_and_save_filename(filename_tag)
+        for i in range(self.hyper_parameters['epoch']):
+            self.train_in_a_epoch(data)
+            self.show_and_save_results(tag='show_train_results_only')
+        self.show_and_save_plots()
+        self.save_model()
+        return None
+    
+    def train(self, train_data):
+        for j in range(self.hyper_parameters['epoch']):
+            self.train_in_a_epoch(train_data)
+        return None
 
-                # Save the plots (acc, loss)
-                if j == epoch-1:
-                    lists = {"train_acc_list":train_acc_list,"train_loss_list":train_loss_list, "valid_acc_list":valid_acc_list, "valid_loss_list":valid_loss_list}
-                    fn.save_dict('../results/acc_loss_lists/' + filepath + '.csv', lists)
-                    fn.save_plot('../results/plots/loss_'+ filepath +'.png', train_loss_list, valid_loss_list, 'loss')
-                    fn.save_plot('../results/plots/acc_'+ filepath +'.png', train_acc_list, valid_acc_list, 'accuracy')
+    def update_weights(self, data): 
+        # By perceptron learning rule, loss function L(w) := sum of abs(x^{T}* w) where x is misclassified.
+        # w(t+1) = w(t) - (sum of delta_x* x^{T}) where delta_x := +1/-1 as x is misclassified as +1/-1
+        delta_x = self.get_delta_x(data)
+        x = self.get_misclassified_x(data)
+        self.weights['w'] = self.weights['w'] - self.hyper_parameters['lr'] * np.sum(delta_x* x, axis=0)
+        return None
 
-    def train_k_fold(self, X, Y, epoch = 50, k_fold = 3):
-        kf = KFold(n_splits=k_fold, random_state=83, shuffle=True)
-        for i, (train_index, valid_index) in enumerate(kf.split(X,y=Y)):
-            print(f"Fold {i}:")
-            self.train( X[train_index], X[valid_index], Y[train_index], Y[valid_index], epoch = epoch, k_fold=k_fold, k_fold_iter=i)
-               
+    def predict_labels(self, data):
+        Xw = self.apply_linear_function(data)
+        labels = np.ones(Xw.shape)
+        labels[Xw < 0] = -1
+        return labels
+   
+    def set_loss(self, data): 
+        # By perceptron learning rule, loss function L(w) := sum of abs(x^{T}* w) where x is misclassified.
+        Xw = self.apply_linear_function(data)
+        indices = self.get_indices_of_the_misclassified(data)
+        self.loss = np.sum(np.abs(Xw[indices]))
+        return None
+
+
+
+    def set_iteration_results(self, tag):
+        if self.is_iteration_finished():
+            self.iteration_results[tag + '_accuracy'] = []
+            self.iteration_results[tag + '_loss'] = []
+        self.iteration_results[tag + '_accuracy'].append(self.accuracy)
+        self.iteration_results[tag + '_loss'].append(self.loss)
+        return None
+    
+    def is_iteration_finished(self):
+        if len(self.iteration_results['valid_accuracy']) == self.hyper_parameters['epoch']:
+            return True
+        else:
+            return False
+    
+    def get_acc_loss_message(self, epoch_id = 0, tag='valid'):
+        message = f"Epoch {epoch_id}: (Train) accuracy = {self.iteration_results['train_accuracy'][-1]:.3f}, loss = {self.iteration_results['train_loss'][-1]:.3f}"
+        if tag =='valid': message += f" (Valid) accuracy = {self.iteration_results['valid_accuracy'][-1]:.3f}, loss = {self.iteration_results['valid_loss'][-1]:.3f}"
+        return message
+    
+    def apply_linear_function(self, data):
+        # linear function f(x)= x^{T}* w+ c= [x_T, 1]^{T}* [w, c] = X* W
+        X = np.append(data.features, np.ones([data.features.shape[0], 1]), axis=1)
+        Xw = np.dot(X, self.weights['w'])
+        return Xw
+
+    def get_indices_of_the_misclassified(self, data): 
+        labels = self.predict_labels(data)
+        indiecs_misclassifed = (labels != data.labels)
+        return indiecs_misclassifed
+
+    def get_delta_x(self, data):
+        # By perceptron learning rule, loss function L(w) := sum of abs(x^{T}* w) where x is misclassified.
+        # w(t+1) = w(t) - (sum of delta_x* x^{T}) where delta_x := +1/-1 as x is misclassified as +1/-1
+        indices = self.get_indices_of_the_misclassified(data)
+        delta_x = -1* data.labels[indices]
+        delta_x = np.expand_dims(delta_x, axis=1)
+        return delta_x
+    
+    def get_misclassified_x(self, data):
+        indices = self.get_indices_of_the_misclassified(data)
+        x = np.append(data.features, np.ones([data.features.shape[0], 1]), axis=1)
+        x = x[indices, :]
+        return x
+
 
 
 if __name__ == '__main__': 
-    X = np.random.randn(6,8)
-    Y = np.random.randn(6,)
+    X = np.random.randn(1000,8)
+    Y = np.random.randn(1000,)
     Y[Y>=0] = 1
     Y[Y<0] = -1
-    print(f"X = {X}")
-    print(f"Y = {Y}")
-    x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=83)
-    
-    cls = LinearClassifier()
-    cls.train(x_train, x_test, y_train, y_test, epoch=1000)
 
-    cls2 = LinearClassifier()
-    cls2.train_k_fold(X, Y, epoch = 50, k_fold = 3)
+    dataset = utils.Dataset(X, Y)
+    train_data, test_data = dataset.split_in_ratio()
+
+    lc = LinearClassifier(X.shape[1])
+    #lc.train_and_show_results(dataset)
+    lc.k_fold_cross_validation(dataset)
