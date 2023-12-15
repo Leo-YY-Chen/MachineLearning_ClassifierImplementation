@@ -2,10 +2,9 @@ import sys
 sys.path.append('..')
 import utils
 import numpy as np
-from tqdm import tqdm
-import classifier as clf
+from model.classifier import Classifier
 
-class KNNClassifier(clf.Classifier):
+class KNNClassifier(Classifier):
     def __init__(self, n_neighbor=3, p_norm=2):
         super().__init__()
         self.name = 'KNN'

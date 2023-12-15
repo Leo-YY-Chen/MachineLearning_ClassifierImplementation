@@ -1,7 +1,10 @@
 from datetime import datetime
+import sys
+sys.path.append('..')
 import utils
 import numpy as np
 import config as cfg
+import os
 
 class Classifier:
     def __init__(self):
@@ -98,14 +101,18 @@ class Classifier:
         return None
     
     def save_message(self, message):
-        with open('../results/log/' + self.name +'.txt', 'a') as f:
+        filepath = os.path.join(cfg.absolute_ML_HW1_path, 'results\log', self.name)
+        with open(filepath +'.txt', 'a') as f:
                 f.write(f"{message} \n")
         return None
     
     def show_and_save_plots(self):
         # LC: acc list(train, valid, test), loss list(train, valid, test)
-        utils.save_plot('../results/plots/loss_'+ self.filename +'.png', self.iteration_results['train_loss'], self.iteration_results['valid_loss'], 'loss')
-        utils.save_plot('../results/plots/acc_'+ self.filename +'.png', self.iteration_results['train_accuracy'], self.iteration_results['valid_accuracy'], 'accuracy')
+        filepath = os.path.join(cfg.absolute_ML_HW1_path, f'results\plots\loss_{self.filename}')
+        utils.save_plot(filepath +'.png', self.iteration_results['train_loss'], self.iteration_results['valid_loss'], 'loss')
+
+        filepath = os.path.join(cfg.absolute_ML_HW1_path, 'results\plots', f'acc_{self.filename}')
+        utils.save_plot(filepath +'.png', self.iteration_results['train_accuracy'], self.iteration_results['valid_accuracy'], 'accuracy')
         return None
 
     def set_and_save_filename(self, tag='temp'):
@@ -117,21 +124,33 @@ class Classifier:
         self.filename = f'{self.name}_{tag}_{self.timestamp}'
         return None
 
-    def save_filename(self): 
-        with open('../results/log/' + self.name +'.txt', 'a') as f:
+    def save_filename(self):
+        filepath = os.path.join(cfg.absolute_ML_HW1_path, 'results\log', self.name)
+        with open(filepath +'.txt', 'a') as f:
                 f.write(f"------------------------------------------------------------------------------- \n")
                 f.write(f"{self.filename} \n")
         return None
 
     def save_model(self):
         dictionary = {'hyper_parameters':self.hyper_parameters, 'weights': self.weights}
-        utils.save_dict('./checkpoint/' + self.filename + '.csv', dictionary)
+        filepath = os.path.join(cfg.absolute_ML_HW1_path, 'model\checkpoint', self.filename)
+        utils.save_dict(filepath + '.csv', dictionary)
         return None
   
-    def set_show_and_save_feature_importance(self, train_data, number_repetition=10):
+    def set_show_and_save_feature_importance(self, train_data, number_repetition=10): ##### refine: depend on cfg, too many lines
         self.set_features_importance(train_data, number_repetition)
-        utils.save_bar_chart(self.filename, cfg.feature_names, self.features_importance) ##### refine: depend on cfg
+        filepath = os.path.join(cfg.absolute_ML_HW1_path, f'results\plots', f'feature_importance_{self.filename}')
+        utils.save_bar_chart(filepath, cfg.feature_names, self.features_importance) 
+        message = self.get_feature_importance_message()
+        self.show_message(message)
+        self.save_message(message)
         return None
+    
+    def get_feature_importance_message(self): ##### refine: depend on cfg. and too ugly
+        message = f""
+        for i in range(len(self.features_importance)):
+            message = message + f"{cfg.feature_names[i] + ': ':<25}{self.features_importance[i]:.3f} \n"
+        return message
 
     def set_features_importance(self, dataset, number_repetition=10): ##### refine: too many lines
         # ref: https://scikit-learn.org/stable/modules/permutation_importance.html
@@ -141,7 +160,7 @@ class Classifier:
             for i in range(number_repetition):
                 shuffle_dataset_i = dataset
                 np.random.seed(i)
-                np.random.shuffle(shuffle_dataset_i.features[:, feature_index])
+                np.random.shuffle(shuffle_dataset_i.features.values[:, feature_index])
                 self.features_importance[feature_index] += self.get_testsing_accuracy(shuffle_dataset_i)
         self.features_importance = self.get_testsing_accuracy(dataset) - self.features_importance/number_repetition
         return None
@@ -150,5 +169,14 @@ class Classifier:
         self.test(dataset)
         score = self.accuracy
         return score
-
     
+
+if __name__ == "__main__":
+    dataset = utils.Dataset()
+    dataset.load('../data/train.csv')
+    dataset.preprocess()
+    train_dataset, test_dataset = dataset.split_in_ratio()
+
+    clf = Classifier()
+    clf.set_show_and_save_feature_importance(train_dataset)
+

@@ -2,9 +2,9 @@ import numpy as np
 import sys
 sys.path.append('..')
 import utils
-import classifier as clf
+from model.classifier import Classifier
 
-class PDTClassifier(clf.Classifier):
+class PDTClassifier(Classifier):
     def __init__(self, max_leaf_impurity=0.2, max_samples_leaf = 1, max_tree_depth=100, ccp_alpha = 0.1):
         super().__init__()
         self.hyper_parameters = {'max_leaf_impurity':max_leaf_impurity, # the maximum of entropy in each leaves

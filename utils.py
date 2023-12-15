@@ -3,10 +3,6 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split, KFold
 import pandas as pd
 import numpy as np
-import model.linear_classifier as mLC
-import model.knn_classifier as mKNN
-import model.naive_decision_tree_classifer as mDT
-import model.pruned_decision_tree_classifer as mPDT
 import config as cfg
 from statistics import mode
 
@@ -47,25 +43,26 @@ class Dataset:
         return lebels, number_oversamples
     
     def clone_subset_randomly_by_labels_and_numbers(self, labels, numbers):
-        for i in range(labels):
-            indices = self.get_indices_of_oversamples_with_label(numbers[i], labels[i])
+        for i, label in enumerate(labels):
+            indices = self.get_indices_of_oversamples_with_label(numbers[i], label)
             self.clone_subset_by_indices(indices)
         return None
     
     def get_indices_of_oversamples_with_label(self, number_oversamples, label):
         indices = self.get_indices_with_label(label)
         indices_of_oversamples = np.random.choice(indices, number_oversamples)
+        all_indices = np.array(range(len(self.features)))
+        indices_of_oversamples = np.in1d(all_indices, indices_of_oversamples)
         return indices_of_oversamples
     
     def clone_subset_by_indices(self, indices):
-        np.concatenate((self.features, self.features[indices, :]))
+        np.concatenate((self.features, self.features[indices]))
         np.concatenate((self.labels, self.labels[indices]))
         return None
 
-    
     def get_indices_with_label(self, label):
-        condition = (self.labels == label)
-        return np.where(condition, self.labels)[0]
+        indices = np.where(self.labels == label)[0]
+        return indices.tolist()
     
     def do_min_max_normalization(self):
         min = np.min(self.features, axis=0)
@@ -361,6 +358,7 @@ def save_plot(filename, train_list, valid_list, plotname='accuracy'):
 def save_bar_chart(filename, label_list, data_list, plotname='Feature Importance'):
     plt.title(plotname)
     plt.bar(label_list, data_list)
+    plt.xticks(rotation=30, ha='right')
     plt.savefig(filename)
     plt.show()
 
