@@ -44,8 +44,7 @@ class Classifier:
         self.show_and_save_results(tag)
         return None
 
-    def train(self, dataset): 
-        # update clf and cal {accuracy, loss}
+    def train(self, dataset):
         self.update_weights(dataset)
         self.set_accuracy_and_loss(dataset)
         return None
@@ -72,7 +71,6 @@ class Classifier:
         return None
 
     def test(self, dataset): 
-        # do cal, plot, save {accuracy, loss}
         self.set_accuracy_and_loss(dataset)
         return None
 
@@ -171,12 +169,112 @@ class Classifier:
         return score
     
 
+class Classifier_v2:
+    def __init__(self):
+        self.name = None
+        self.hyper_parameters = None
+        self.parameters = None
+
+        self.
+
+    # Assume that   k_train_features:   3D array (k, feature_type, feature_value)
+    #               k_train_labels:     2D array (k, label)
+    #               (test_)features:    2D array (feature_type, feature_value)
+    #               (test_)labels:      1D array (label)
+
+    def k_fold_cross_validation(self, k_train_features, k_train_labels, test_features, test_labels, k = 3):
+        for i in range(k):
+            self.train(self.get_ith_fold_train_features_and_labels(i, k_train_features, k_train_labels))
+            self.valid(self.get_ith_fold_valid_features_and_labels(i, k_train_features, k_train_labels))
+        self.test(test_features, test_labels)
+        return None
+    
+
+
+
+
+    def train(self, features, labels):
+        self.update_parameters(features, labels)
+        self.show_results(features, labels)
+        self.save_results(features, labels)
+        return None 
+    
+    def test(self, features, labels):
+        self.show_results(features, labels)
+        return None
+    
+    def valid(self, features, labels):
+        return self.test(features, labels)
+
+
+
+
+    
+    def show_results(self, features, labels):
+        self.set_classifier_name()
+        self.show_classifier_name()
+        # print accuracy and loss
+        # plot accuracy and loss if classifier is NN
+        return None
+    
+    def save_results(self, features, labels):        
+        # save name, log(plot), and parameters
+        return None
+    
+    def update_parameters(self, features, labels):
+        return None
+
+    def calculate_accuracy(self, features, labels):
+        return None
+    
+    def calculate_loss(self, features, labels):
+        return None
+    
+
+
+
+
+    def get_ith_fold_train_features_and_labels(self, i, k_train_features, k_train_labels):
+        # CAUTION: Not Implemented!
+        return 
+    
+    def get_ith_fold_valid_features_and_labels(self, i, k_train_features, k_train_labels):
+        # CAUTION: Not Test if output is 2D array!
+        return k_train_features[i,:,:], k_train_labels[i,:,:]
+    
+    def set_classifier_name(self):
+        self.name = f"{self.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        return None
+    
+    def show_classifier_name(self):
+        print(f"{self.name}")
+        return None
+
+
+
+        
+
+    
+        
+    
+
 if __name__ == "__main__":
-    dataset = utils.Dataset()
+    '''dataset = utils.Dataset()
     dataset.load('../data/train.csv')
     dataset.preprocess()
     train_dataset, test_dataset = dataset.split_in_ratio()
 
     clf = Classifier()
-    clf.set_show_and_save_feature_importance(train_dataset)
+    clf.set_show_and_save_feature_importance(train_dataset)'''
 
+    
+
+
+
+    def test_get_ith_fold_train_features_and_labels():
+        clf = Classifier()
+        a = np.random.rand(2,3,4)
+        b = 
+        return a == b 
+
+    print(f"{test_get_ith_fold_train_features_and_labels()}:test_get_ith_fold_train_features_and_labels()")
