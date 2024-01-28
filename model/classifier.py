@@ -171,21 +171,18 @@ class Classifier:
 
 class Classifier_v2:
     def __init__(self):
-        self.name = None
+        self.timestamp = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         self.hyper_parameters = None
         self.parameters = None
+        #self.performance = {'accuracy':None, 'loss':None}
 
-        self.
+    # Assume that   (train_, test_)features:    2D array (feature_type, feature_value)
+    #               (train_, test_)labels:      1D array (label)
 
-    # Assume that   k_train_features:   3D array (k, feature_type, feature_value)
-    #               k_train_labels:     2D array (k, label)
-    #               (test_)features:    2D array (feature_type, feature_value)
-    #               (test_)labels:      1D array (label)
-
-    def k_fold_cross_validation(self, k_train_features, k_train_labels, test_features, test_labels, k = 3):
+    def k_fold_cross_validation(self, train_features, train_labels, test_features, test_labels, k = 3):
         for i in range(k):
-            self.train(self.get_ith_fold_train_features_and_labels(i, k_train_features, k_train_labels))
-            self.valid(self.get_ith_fold_valid_features_and_labels(i, k_train_features, k_train_labels))
+            self.train(self.remove_ith_fold_dataset(i, train_features, train_labels))
+            self.valid(self.get_ith_fold_dataset(i, train_features, train_labels))
         self.test(test_features, test_labels)
         return None
     
@@ -195,12 +192,16 @@ class Classifier_v2:
 
     def train(self, features, labels):
         self.update_parameters(features, labels)
-        self.show_results(features, labels)
-        self.save_results(features, labels)
+        self.compute_performance_metrics(labels, self.get_prediction(features))
+        self.show_performance()
+        self.save_performance()
+        self.save_classifier()
         return None 
     
     def test(self, features, labels):
-        self.show_results(features, labels)
+        self.compute_performance_metrics(labels, self.get_prediction(features))
+        self.show_performance()
+        self.save_performance()
         return None
     
     def valid(self, features, labels):
@@ -209,46 +210,62 @@ class Classifier_v2:
 
 
 
-    
-    def show_results(self, features, labels):
-        self.set_classifier_name()
-        self.show_classifier_name()
-        # print accuracy and loss
-        # plot accuracy and loss if classifier is NN
-        return None
-    
-    def save_results(self, features, labels):        
-        # save name, log(plot), and parameters
-        return None
-    
+
     def update_parameters(self, features, labels):
         return None
 
-    def calculate_accuracy(self, features, labels):
+    def get_prediction(self, features):
         return None
     
-    def calculate_loss(self, features, labels):
-        return None
+    def compute_performance_metrics(self, labels, prediction):
+        self.compute_accuracy(labels, prediction)
+        return None 
+    
+    def compute_accuracy(self, labels, prediction):
+        return np.sum(prediction == labels) / len(labels)
     
 
 
 
 
-    def get_ith_fold_train_features_and_labels(self, i, k_train_features, k_train_labels):
-        # CAUTION: Not Implemented!
-        return 
     
-    def get_ith_fold_valid_features_and_labels(self, i, k_train_features, k_train_labels):
-        # CAUTION: Not Test if output is 2D array!
-        return k_train_features[i,:,:], k_train_labels[i,:,:]
-    
-    def set_classifier_name(self):
-        self.name = f"{self.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    def show_performance(self):
         return None
     
-    def show_classifier_name(self):
-        print(f"{self.name}")
+    def save_performance(self):
         return None
+    
+    def save_classifier(self):
+        return None
+    
+    def load_classifier(self):
+        return None
+
+    def remove_ith_fold_data(self, i, train_features, train_labels):
+        return None
+    
+    def get_ith_fold_data(self, i, train_features, train_labels):
+        return None
+    
+    def get_features_importance(self, features, labels, number_repetition=10):
+        # ref: https://scikit-learn.org/stable/modules/permutation_importance.html
+        features_importance = []
+        for feature_index in range(features.shape[1]):
+            features_importance.append(0)
+            for i in range(number_repetition):
+                shuffle_features, shuffle_labels = self.get_ith_row_shuffled_data(self, i, features, labels)
+                features_importance[feature_index] += self.compute_accuracy(shuffle_labels, self.get_prediction(shuffle_features))
+        features_importance = self.compute_accuracy(labels, self.get_prediction(features)) - features_importance/number_repetition
+        return features_importance
+    
+    def get_ith_row_shuffled_data(self, i, features, labels):
+        return np.random.shuffle(features.values[:, i]), np.random.shuffle(labels.values[:, i])
+
+    
+
+
+
+
 
 
 
