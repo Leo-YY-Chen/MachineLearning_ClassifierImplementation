@@ -172,17 +172,16 @@ class Classifier:
 class Classifier_v2:
     def __init__(self):
         self.timestamp = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        self.hyper_parameters = None
-        self.parameters = None
-        #self.performance = {'accuracy':None, 'loss':None}
+        self.hyper_parameters = {}
+        self.parameters = {}
 
     # Assume that   (train_, test_)features:    2D array (feature_type, feature_value)
     #               (train_, test_)labels:      1D array (label)
 
     def k_fold_cross_validation(self, train_features, train_labels, test_features, test_labels, k = 3):
         for i in range(k):
-            self.train(self.remove_ith_fold_dataset(i, train_features, train_labels))
-            self.valid(self.get_ith_fold_dataset(i, train_features, train_labels))
+            self.train(self.remove_ith_fold_data(k, i, train_features, train_labels))
+            self.valid(self.get_ith_fold_data(k, i, train_features, train_labels))
         self.test(test_features, test_labels)
         return None
     
@@ -241,13 +240,14 @@ class Classifier_v2:
     def load_classifier(self):
         return None
 
-    def remove_ith_fold_data(self, i, train_features, train_labels):
-        return None
+    def remove_ith_fold_data(self, k, i, train_features, train_labels):
+        return train_features[:, ], 
     
-    def get_ith_fold_data(self, i, train_features, train_labels):
-        return None
+    def get_ith_fold_data(self, k, i, train_features, train_labels):
+        fold_size = int(train_features.shape[1] / k)        
+        return train_features[:, i*fold_size:(i+1)*fold_size], train_labels[:, i*fold_size:(i+1)*fold_size]
     
-    def get_features_importance(self, features, labels, number_repetition=10):
+    def get_feature_importance(self, features, labels, number_repetition=10):
         # ref: https://scikit-learn.org/stable/modules/permutation_importance.html
         features_importance = []
         for feature_index in range(features.shape[1]):
@@ -284,14 +284,26 @@ if __name__ == "__main__":
     clf = Classifier()
     clf.set_show_and_save_feature_importance(train_dataset)'''
 
+    print("hahah")
+
+    def test_get_ith_fold_data():
+        clf = Classifier_v2()
+        k=3
+        i=0
+        features = np.resize(range(2*6), (2,6))
+        labels = range(6)
+        
+        features, labels = clf.get_ith_fold_data(k, i, features, labels)
+        
+        if (features == np.array([[0,1],[6,7]])) and (labels == np.array([0,1])):
+            print("passing")
+        else:
+            print("fail")
+
+    
+    test_get_ith_fold_data()
+    
     
 
 
-
-    def test_get_ith_fold_train_features_and_labels():
-        clf = Classifier()
-        a = np.random.rand(2,3,4)
-        b = 
-        return a == b 
-
-    print(f"{test_get_ith_fold_train_features_and_labels()}:test_get_ith_fold_train_features_and_labels()")
+    
