@@ -1,5 +1,5 @@
 class Result_Presenter:
-    def __init__(self) -> None:
+    def __init__(self):
         pass
 
     def get_result(self):
