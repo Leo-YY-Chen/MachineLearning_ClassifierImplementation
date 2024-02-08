@@ -1,9 +1,9 @@
 from datetime import datetime
 import sys
 sys.path.append('..')
-import utils
+import model.utils as utils
 import numpy as np
-import config as cfg
+import data.config as cfg
 import os
 import pickle
 

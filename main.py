@@ -1,5 +1,5 @@
-import config as cfg
-import utils
+import data.config as cfg
+import model.utils as utils
 import model.linear_classifier as mLC
 import model.knn_classifier as mKNN
 import model.naive_decision_tree_classifer as mDT

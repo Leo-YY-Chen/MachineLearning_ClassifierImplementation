@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split, KFold
 import pandas as pd
 import numpy as np
-import config as cfg
+import data.config as cfg
 from statistics import mode
 
 class Dataset:

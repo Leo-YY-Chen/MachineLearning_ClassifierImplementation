@@ -1,6 +1,6 @@
 import sys
 sys.path.append('..')
-import utils
+import model.utils as utils
 import numpy as np
 from model.classifier import Classifier
 

@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 sys.path.append('..')
-import utils
+import model.utils as utils
 from model.classifier import Classifier
 
 class PDTClassifier(Classifier):
