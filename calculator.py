@@ -1,15 +1,5 @@
 import numpy as np
-
-class Metrics:
-    def __init__(self):
-        self.accuracy = np.nan
-        self.confusion_matrix = {'TP':np.nan, 'TN':np.nan, 'FP':np.nan, 'FN':np.nan}
-        self.precision = np.nan
-        self.recall = np.nan
-        self.F1_score = np.nan
-        self.ROC = None
-        self.cross_entropy = np.nan
-
+import classifier
 
 
 
@@ -17,18 +7,18 @@ class Metrics:
 
 class Performance_Calculator:
     def __init__(self):
-        self.metrics = Metrics()
+        self.metrics = classifier.Classification_Metrics()
 
-    def calculate_metrics(self, labels, predictions):
-        return None
-    
+    def calculate_metrics(self,labels, predictions):
+        self.metrics.accuracy = self.calculate_accuracy(labels, predictions)
+
+
 
 
 
 
     def calculate_accuracy(self, labels, predictions):
-        self.metrics.accuracy = np.sum(predictions == labels) / len(labels)
-        return self.metrics.accuracy
+        return np.sum(predictions == labels) / len(labels)
 
 
 
@@ -43,7 +33,6 @@ class Feature_Importance_Calculator:
     #               labels:      1D array (label)
     #               classifier:  Classifier()
 
-
     def calculate_feature_importances(self, trained_classifier, features, labels, number_repetition=10):
         # ref: https://scikit-learn.org/stable/modules/permutation_importance.html
         return [self.get_ith_feature_importance(trained_classifier, ith, features, labels, number_repetition) for ith in range(features.shape[1])]
@@ -53,7 +42,7 @@ class Feature_Importance_Calculator:
 
 
 
-    def get_ith_feature_importance(self, trained_classifier, ith, features, labels, number_repetition):
+    def get_ith_feature_importance(self, trained_classifier:classifier.Classifier, ith, features, labels, number_repetition):
         result = 0
         performance_calculator = Performance_Calculator()
         for repeat in range(number_repetition):
