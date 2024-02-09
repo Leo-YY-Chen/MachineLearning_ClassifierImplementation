@@ -6,7 +6,12 @@ import data_processor
 import calculator
 import presenter
 
-class Classification_Metrics:
+
+
+
+
+
+class Metrics:
     def __init__(self):
         self.accuracy = np.nan
         self.confusion_matrix = {'TP':np.nan, 'TN':np.nan, 'FP':np.nan, 'FN':np.nan}
@@ -17,20 +22,44 @@ class Classification_Metrics:
         self.cross_entropy = np.nan
         self.loss = np.nan
 
-class Classifier_Infomation:
-    def __init__(self):
-        self.timestamp = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        self.state = "Train/Test/Valid"
-        self.fold_quantity = np.nan
-        self.fold_number = np.nan
-        self.epoch_quantity = np.nan
-        self.epoch_number = np.nan
+        self.train_accuracy = []
+        self.train_loss = []
+        self.valid_accuracy = []
+        self.valid_loss = []
+
+
+
+
+
+
+class Information:
+    def __init__(self, 
+                 type = "DecisionTree_Clustering_NeuralNetwork_etc",
+                 timestamp = None,
+                 state = "Train/Test/Valid", 
+                 fold_quantity = np.nan, 
+                 fold_number = np.nan, 
+                 epoch_quantity = np.nan,
+                 epoch_number = np.nan):
+        self.type = type
+        self.timestamp = timestamp
+        self.state = state
+        self.fold_quantity = fold_quantity
+        self.fold_number = fold_number
+        self.epoch_quantity = epoch_quantity
+        self.epoch_number = epoch_number
+
+
+
+
+
 
 class Classifier:
     def __init__(self):
+        self.type = "DecisionTree_Clustering_NeuralNetwork_etc"
+        self.timestamp = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         self.attributes = {'hyper_parameters':{}, 'parameters':{}}
-        self.metrics = Classification_Metrics()
-        self.information = Classifier_Infomation()
+        self.metrics = Metrics()
 
     # Assume that   (train_, test_)features:    2D array (feature_type, feature_value)
     #               (train_, test_)labels:      1D array (label)
@@ -44,14 +73,14 @@ class Classifier:
 
     def train(self, features, labels):
         self.update_parameters(features, labels)
-        self.get_performance(features, labels)
+        self.get_performance(features, labels, Information(self.type, self.timestamp, "Train"))
         self.save_classifier()
     
     def test(self, features, labels):
-        self.get_performance(features, labels)
+        self.get_performance(features, labels, Information(self.type, self.timestamp, "Test"))
     
     def valid(self, features, labels):
-        self.get_performance(features, labels)
+        self.get_performance(features, labels, Information(self.type, self.timestamp, "Valid"))
 
     
 
@@ -59,16 +88,16 @@ class Classifier:
 
 
 
-    def update_parameters(self, features, labels) -> None:
+    def update_parameters(self, features, labels):
         pass
 
-    def get_prediction(self, features) -> float:
+    def get_prediction(self, features):
         pass #return labels
     
-    def get_performance(self, features, labels):
-        self.metrics = self.calcualte_performance_metrics(labels, self.get_prediction(features))
-        self.show_performance()
-        self.save_performance()
+    def get_performance(self, features, labels, information:Information):
+        self.set_metrics(self.calcualte_performance_metrics(labels, self.get_prediction(features)))
+        self.show_performance(information, self.metrics)
+        self.save_performance(information, self.metrics)
         
     
 
@@ -81,15 +110,18 @@ class Classifier:
     def calcualte_performance_metrics(self, labels, prediction):
         performance_calculator = calculator.Performance_Calculator()
         return performance_calculator.calculate_metrics(labels, prediction)
+    
+    def set_metrics(self, metrics:Metrics):
+        self.metrics = metrics
         
-    def show_performance(self):
-        #prstr = presenter.Result_Presenter(self.information, self.metrics)
-        #prstr.show_result()
+    def show_performance(self, information:Information, metrics:Metrics):
+        prstr = presenter.Performance_Presenter(information, metrics)
+        prstr.show_result()
         pass
     
-    def save_performance(self):
-        #prstr = presenter.Result_Presenter()
-        #prstr.save_result()
+    def save_performance(self, information:Information, metrics:Metrics):
+        prstr = presenter.Performance_Presenter(information, metrics)
+        prstr.save_result()
         pass
     
     def save_classifier(self):
@@ -103,11 +135,7 @@ class Classifier:
 
     
 
-    def get_state_message(self, state = "Train/Test/Valid", fold = np.nan, epoch = np.nan):
-        fold_info = "" if fold == np.nan else f" Fold {fold}" 
-        epoch_info = "" if epoch == np.nan else f" Epoch {epoch}"
-        info = state + fold_info + epoch_info
-        return f"{info}: accuracy = {self.metrics.accuracy:.3f}, loss = {self.metrics.loss:.3f}"
+    
 
     def get_file_name(self):
         return os.path.join(os.getcwd(), 'model/checkpoint', self.timestamp) + '.pkl'
@@ -147,19 +175,3 @@ if __name__ == "__main__":
         else:
             print("saving fail")
     test_save_and_load_classifier()'''
-
-
-    
-
-
-    #######################
-    # TEST perfomance
-    #######################
-    def test_get_state_message():
-        clf = Classifier()
-        message = clf.get_state_message("Train", 1, "number")
-        if message == "Train Fold 1 Epoch number: accuracy = nan, loss = nan":
-            print("passing")
-        else:
-            print("fail")
-    test_get_state_message()

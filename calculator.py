@@ -7,7 +7,7 @@ import classifier
 
 class Performance_Calculator:
     def __init__(self):
-        self.metrics = classifier.Classification_Metrics()
+        self.metrics = classifier.Metrics()
 
     def calculate_metrics(self,labels, predictions):
         self.metrics.accuracy = self.calculate_accuracy(labels, predictions)
@@ -31,16 +31,13 @@ class Feature_Importance_Calculator:
 
     # Assume that   features:    2D array (feature_type, feature_value)
     #               labels:      1D array (label)
-    #               classifier:  Classifier()
+    #               classifier:  classifier.Classifier()
 
-    def calculate_feature_importances(self, trained_classifier, features, labels, number_repetition=10):
+    def calculate_feature_importances(self, trained_classifier:classifier.Classifier, features, labels, number_repetition=10):
         # ref: https://scikit-learn.org/stable/modules/permutation_importance.html
         return [self.get_ith_feature_importance(trained_classifier, ith, features, labels, number_repetition) for ith in range(features.shape[1])]
     
     
-
-
-
 
     def get_ith_feature_importance(self, trained_classifier:classifier.Classifier, ith, features, labels, number_repetition):
         result = 0
