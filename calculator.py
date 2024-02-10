@@ -5,12 +5,13 @@ import classifier
 
 
 
-class Performance_Calculator:
+class Performance_Calculator(classifier.Calculator_Interface):
     def __init__(self):
         self.metrics = classifier.Metrics()
 
     def calculate_metrics(self,labels, predictions):
         self.metrics.accuracy = self.calculate_accuracy(labels, predictions)
+        return self.metrics
 
 
 
@@ -25,7 +26,7 @@ class Performance_Calculator:
 
 
 
-class Feature_Importance_Calculator:
+class Feature_Importance_Calculator(classifier.Calculator_Interface):
     def __init__(self):
         pass
 
@@ -33,19 +34,18 @@ class Feature_Importance_Calculator:
     #               labels:      1D array (label)
     #               classifier:  classifier.Classifier()
 
-    def calculate_feature_importances(self, trained_classifier:classifier.Classifier, features, labels, number_repetition=10):
+    def calculate_feature_importances(self, get_predictions, features, labels, number_repetition=10):
         # ref: https://scikit-learn.org/stable/modules/permutation_importance.html
-        return [self.get_ith_feature_importance(trained_classifier, ith, features, labels, number_repetition) for ith in range(features.shape[1])]
+        return [self.get_ith_feature_importance(get_predictions, ith, features, labels, number_repetition) for ith in range(features.shape[1])]
     
     
 
-    def get_ith_feature_importance(self, trained_classifier:classifier.Classifier, ith, features, labels, number_repetition):
+    def get_ith_feature_importance(self, get_predictions, ith, features, labels, number_repetition):
         result = 0
-        performance_calculator = Performance_Calculator()
         for repeat in range(number_repetition):
                 shuffled_features = self.shuffle_ith_feature_column(self, ith, features)
-                predictions = trained_classifier.get_prediction(shuffled_features)
-                result += performance_calculator.calculate_accuracy(labels, predictions)
+                predictions = get_predictions(shuffled_features)
+                result += self.calculate_accuracy(labels, predictions) 
         return result/number_repetition
 
     def shuffle_ith_feature_column(self, ith, features):
@@ -53,6 +53,12 @@ class Feature_Importance_Calculator:
         np.random.shuffle(features_copy[:, ith])
         return features_copy
     
+    def calculate_accuracy(self, labels, predictions):
+        return np.sum(predictions == labels) / len(labels)
+
+
+
+
 
 
 

@@ -2,9 +2,8 @@ from datetime import datetime
 import numpy as np
 import os
 import pickle
-import data_processor
-import calculator
-import presenter
+from typing import Callable, Sequence, Iterable, Any
+import data_processor ##### NEED REFINE: does classifier need to depend on data_processor?
 
 
 
@@ -35,7 +34,7 @@ class Metrics:
 class Information:
     def __init__(self, 
                  type = "DecisionTree_Clustering_NeuralNetwork_etc",
-                 timestamp = None,
+                 timestamp = f"invalid_info_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
                  state = "Train/Test/Valid", 
                  fold_quantity = np.nan, 
                  fold_number = np.nan, 
@@ -51,6 +50,28 @@ class Information:
 
 
 
+class Calculator_Interface:
+    def calculate_metrics(self, labels:Iterable[Sequence[Any]], predictions:Iterable[Sequence[Any]]) -> Metrics:
+        pass
+
+    def calculate_feature_importances(self, get_predictions:Callable[[Iterable[Sequence[Any]]], Iterable[Any]], 
+                                        features:Iterable[Sequence[Any]],
+                                        labels:Iterable[Any], 
+                                        number_repetition:int) -> Iterable[float]:
+        pass
+
+
+
+
+
+class Presenter_Interface: ##### NEED CHECK: can Performance_Presenter match Presenter_Interface by different func args?
+    def show_performance(self, information:Information, metrics:Metrics) -> None:
+        pass
+    
+    def save_performance(self, information:Information, metrics:Metrics) -> None:
+        pass
+
+
 
 
 
@@ -59,7 +80,6 @@ class Classifier:
         self.type = "DecisionTree_Clustering_NeuralNetwork_etc"
         self.timestamp = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         self.attributes = {'hyper_parameters':{}, 'parameters':{}}
-        self.metrics = Metrics()
 
     # Assume that   (train_, test_)features:    2D array (feature_type, feature_value)
     #               (train_, test_)labels:      1D array (label)
@@ -73,14 +93,14 @@ class Classifier:
 
     def train(self, features, labels):
         self.update_parameters(features, labels)
-        self.get_performance(features, labels, Information(self.type, self.timestamp, "Train"))
+        self.get_performance(features, labels, Information(self.type, self.timestamp, "Train")) ##### NEED REFINE: init Information() with too many args
         self.save_classifier()
     
     def test(self, features, labels):
-        self.get_performance(features, labels, Information(self.type, self.timestamp, "Test"))
+        self.get_performance(features, labels, Information(self.type, self.timestamp, "Test")) ##### NEED REFINE: init Information() with too many args
     
     def valid(self, features, labels):
-        self.get_performance(features, labels, Information(self.type, self.timestamp, "Valid"))
+        self.get_performance(features, labels, Information(self.type, self.timestamp, "Valid")) ##### NEED REFINE: init Information() with too many args
 
     
 
@@ -88,16 +108,16 @@ class Classifier:
 
 
 
-    def update_parameters(self, features, labels):
+    def update_parameters(self, features, labels) -> None:
         pass
 
-    def get_prediction(self, features):
-        pass #return labels
+    def get_predictions(self, features) -> list[float]:
+        pass 
     
     def get_performance(self, features, labels, information:Information):
-        self.set_metrics(self.calcualte_performance_metrics(labels, self.get_prediction(features)))
-        self.show_performance(information, self.metrics)
-        self.save_performance(information, self.metrics)
+        metrics = self.calculate_metrics(labels, self.get_predictions(features))
+        self.show_performance(information, metrics)
+        self.save_performance(information, metrics)
         
     
 
@@ -107,22 +127,14 @@ class Classifier:
 
 
 
-    def calcualte_performance_metrics(self, labels, prediction):
-        performance_calculator = calculator.Performance_Calculator()
-        return performance_calculator.calculate_metrics(labels, prediction)
-    
-    def set_metrics(self, metrics:Metrics):
-        self.metrics = metrics
+    def calculate_metrics(self, labels, predictions):
+        Calculator_Interface().calculate_metrics(labels, predictions)
         
     def show_performance(self, information:Information, metrics:Metrics):
-        prstr = presenter.Performance_Presenter(information, metrics)
-        prstr.show_result()
-        pass
+        Presenter_Interface().show_performance(information, metrics)
     
     def save_performance(self, information:Information, metrics:Metrics):
-        prstr = presenter.Performance_Presenter(information, metrics)
-        prstr.save_result()
-        pass
+        Presenter_Interface().save_performance(information, metrics)
     
     def save_classifier(self):
         with open(self.get_file_name(), 'wb') as fp:
@@ -142,6 +154,7 @@ class Classifier:
     
     
     
+
 
 
 
