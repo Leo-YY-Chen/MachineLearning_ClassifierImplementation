@@ -197,3 +197,19 @@ def test_k_fold_cross_validation():
     test_labels = np.array([-1,-1,-1])
     knn.k_fold_cross_validation(train_features, train_labels, test_features, test_labels, data_processor.Data_Processor())
 test_k_fold_cross_validation()'''
+
+
+
+
+#######################
+# TEST LinearClassifier
+#######################
+def test_2D_1D_array_broadcast_multiply():
+    twoDArray = np.array([[1,2],[3,4],[5,6]])
+    oneDArray = np.expand_dims(np.array([1,-1,3]), axis=1)
+    
+    if (twoDArray*oneDArray == np.array([[1,2],[-3,-4],[15,18]])).all():
+        print("passing")
+    else:
+        print("fail")
+test_2D_1D_array_broadcast_multiply()

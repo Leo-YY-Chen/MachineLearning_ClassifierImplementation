@@ -7,7 +7,7 @@ import model.utils as utils
 
 ## create linear classifier
 class LinearClassifier(Classifier):
-    def __init__(self, calculator:Calculator_Interface, presenter:Presenter_Interface, lr=0.001, epoch = 50):
+    def __init__(self, calculator:Calculator_Interface, presenter:Presenter_Interface, lr=0.001, epoch = 10):
         super().__init__(calculator, presenter)
         self.information.type = 'LC'
         self.attributes["parameters"] = {'w': None}
@@ -31,6 +31,95 @@ class LinearClassifier(Classifier):
             self.get_performance(features, labels)
             self.save_classifier()
 
+
+
+    
+
+
+    
+    def update_parameters(self, features, labels):
+        self.check_weights(features) 
+        # By perceptron learning rule, loss function 
+        #       L(w) := sum of abs(x^{T}* w)
+        #       => (Gradient descent) w(t+1) := w(t) - (lr) * (sum of delta_x * x^{T}) 
+        # where
+        #       x: misclassified features               2D array (n_misclassified_feature_instance, n_feature_type + 1)
+        #       w: weights                              1D array (n_feature_type + 1)
+        #       t: epoch                                int
+        #       delta_x: array of +1/-1                 2D array (n_misclassified_feature_instance, 1) 
+        #       delta_x * x                             ###### check the formula of learning rule
+        #       p.s. delta_x size is determined to follow broadcast multiplication rule  
+        delta_x = self.get_delta_x(features, labels)
+        x = self.get_misclassified_x(features, labels)
+        self.attributes['parameters']['w'] = self.attributes['parameters']['w'] - self.attributes['hyper_parameters']['lr'] * np.sum(delta_x*x, axis=0)
+        
+    def get_predictions(self, features):
+        self.check_weights(features) 
+        Xw = self.apply_linear_function(features)
+        labels = np.ones(Xw.shape)
+        labels[Xw < 0] = -1
+        return labels
+    
+
+
+
+    def check_weights(self, features):
+        if self.attributes['parameters']['w'] is None:
+            self.attributes['parameters']['w'] = np.random.rand(features.shape[1] + 1)
+
+    def get_delta_x(self, features, labels):
+        # delta_x[i,:] := +1/-1 when x[i,:] is misclassified as +1/-1
+        misclassified_indices = (labels != self.get_predictions(features))
+        delta_x = -1* labels[misclassified_indices]
+        return np.expand_dims(delta_x, axis=0)
+    
+    def get_misclassified_x(self, features, labels):
+        misclassified_indices = (labels != self.get_predictions(features))
+        x = np.append(features, np.ones([features.shape[0], 1]), axis=1)
+        return x[misclassified_indices, :]
+
+    def apply_linear_function(self, features):
+        # Linear function 
+        #       f(x)= x^{T} * w + c= [x_T, 1]^{T} * [w, c] = X * W
+        # where
+        #       x^{T} = x_T := features                     2D array (n_feature_instance, n_feature_type)
+        #       X := [features, ones_vector]                2D array (n_feature_instance, n_feature_type + 1)
+        #       W := self.attributes['parameters']['w']     1D array (n_feature_type + 1)
+        X = np.append(features, np.ones([features.shape[0], 1]), axis=1)
+        Xw = np.dot(X, self.attributes['parameters']['w'])
+        return Xw
+
+
+
+
+
+
+    def set_metrics(self, labels, predictions):
+        super().set_metrics(labels, predictions)
+        self.reset_train_valid_accuracy_loss()
+        self.set_train_valid_accuracy_loss()
+        
+    def reset_train_valid_accuracy_loss(self):
+        if self.is_looping_starting():
+            self.metrics.train_accuracy = []
+            self.metrics.train_loss = []
+            self.metrics.valid_accuracy = []
+            self.metrics.valid_loss = []
+
+    def set_train_valid_accuracy_loss(self):
+        if self.information.state == "Train":
+            self.metrics.train_accuracy = self.metrics.accuracy
+            self.metrics.train_loss = self.metrics.loss
+        elif self.information.state == "Valid":
+            self.metrics.valid_accuracy = self.metrics.accuracy
+            self.metrics.valid_loss = self.metrics.loss
+
+    def is_looping_starting(self):
+        if self.information.epoch_number == 0:
+            return True
+        else:
+            return False
+        
 
 
     '''def train_valid_then_show_and_save_results(self, train_dataset, test_dataset, filename_tag='temp'): 
@@ -66,31 +155,13 @@ class LinearClassifier(Classifier):
         for j in range(self.hyper_parameters['epoch']):
             self.train_in_a_epoch(dataset)
         return None'''
-    
-    def update_parameters(self, features, labels):
-        self.check_or_init_weights(features) 
-        # By perceptron learning rule, loss function L(w) := sum of abs(x^{T}* w) where x is misclassified.
-        # w(t+1) = w(t) - (sum of delta_x* x^{T}) where delta_x := +1/-1 as x is misclassified as +1/-1
-        delta_x = self.get_delta_x(features, labels)
-        x = self.get_misclassified_x(features, labels)
-        self.attributes['parameters']['w'] = self.attributes['parameters']['w'] - self.attributes['hyper_parameters']['lr'] * np.sum(delta_x* x, axis=0)
-        
-
-    def get_predictions(self, features):
-        self.check_or_init_weights(features) 
-        Xw = self.apply_linear_function(features)
-        labels = np.ones(Xw.shape)
-        labels[Xw < 0] = -1
-        return labels
 
 
 
 
 
-
-
-    '''def update_weights(self, dataset): ##### refine: do more than one thing in a function (i.e. check_or_init_weights)
-        self.check_or_init_weights(dataset) 
+    '''def update_weights(self, dataset): ##### refine: do more than one thing in a function (i.e. check_weights)
+        self.check_weights(dataset) 
         # By perceptron learning rule, loss function L(w) := sum of abs(x^{T}* w) where x is misclassified.
         # w(t+1) = w(t) - (sum of delta_x* x^{T}) where delta_x := +1/-1 as x is misclassified as +1/-1
         delta_x = self.get_delta_x(dataset)
@@ -98,14 +169,14 @@ class LinearClassifier(Classifier):
         self.weights['w'] = self.weights['w'] - self.hyper_parameters['lr'] * np.sum(delta_x* x, axis=0)
         return None
 
-    def predict_labels(self, dataset): ##### refine: do more than one thing in a function (i.e. check_or_init_weights)
-        self.check_or_init_weights(dataset) 
+    def predict_labels(self, dataset): ##### refine: do more than one thing in a function (i.e. check_weights)
+        self.check_weights(dataset) 
         Xw = self.apply_linear_function(dataset)
         labels = np.ones(Xw.shape)
         labels[Xw < 0] = -1
         return labels'''
     
-    '''def check_or_init_weights(self, dataset):
+    '''def check_weights(self, dataset):
         if self.weights['w'] is None:
             self.weights['w'] = np.random.rand(dataset.features.shape[1] + 1)
         return None'''
@@ -113,9 +184,7 @@ class LinearClassifier(Classifier):
 
 
 
-    def check_or_init_weights(self, features):
-        if self.attributes['parameters']['w'] is None:
-            self.attributes['parameters']['w'] = np.random.rand(features.shape[1] + 1)
+    
     
 
 
@@ -149,30 +218,10 @@ class LinearClassifier(Classifier):
 
 
 
-    def set_metrics(self, labels, predictions):
-        super().set_metrics(labels, predictions)
-
-        if self.is_looping_starting():
-            self.metrics.train_accuracy = []
-            self.metrics.train_loss = []
-            self.metrics.valid_accuracy = []
-            self.metrics.valid_loss = []
-
-        if self.information.state == "Train":
-            self.metrics.train_accuracy = self.metrics.accuracy
-            self.metrics.train_loss = self.metrics.loss
-        elif self.information.state == "Valid":
-            self.metrics.valid_accuracy = self.metrics.accuracy
-            self.metrics.valid_loss = self.metrics.loss
-        else:
-            return None
+    
         
     
-    def is_looping_starting(self):
-        if self.information.epoch_number == 0:
-            return True
-        else:
-            return False
+    
         
     '''def show_and_save_results(self, tag, epoch_id = 0):
         message = self.get_acc_loss_message(tag, epoch_id)
@@ -193,6 +242,10 @@ class LinearClassifier(Classifier):
 
     '''
 
+
+
+    
+
     '''def get_delta_x(self, dataset):
         # By perceptron learning rule, loss function L(w) := sum of abs(x^{T}* w) where x is misclassified.
         # w(t+1) = w(t) - (sum of delta_x* x^{T}) where delta_x := +1/-1 as x is misclassified as +1/-1
@@ -212,22 +265,12 @@ class LinearClassifier(Classifier):
         indiecs_misclassifed = (labels != dataset.labels)
         return indiecs_misclassifed'''
     
-
-
-    def get_delta_x(self, features, labels):
-        # By perceptron learning rule, loss function L(w) := sum of abs(x^{T}* w) where x is misclassified.
-        # w(t+1) = w(t) - (sum of delta_x* x^{T}) where delta_x := +1/-1 as x is misclassified as +1/-1
-        indices = self.get_indices_of_the_misclassified(features, labels)
-        delta_x = -1* labels[indices]
-        return np.expand_dims(delta_x, axis=0)
+    '''def get_indices_of_the_misclassified(self, features, labels): 
+        return (self.get_predictions(features) != labels)'''
     
-    def get_misclassified_x(self, features, labels):
-        indices = self.get_indices_of_the_misclassified(features, labels)
-        x = np.append(features, np.ones([1, features.shape[1]]), axis=0)
-        return x[indices, :]
 
-    def get_indices_of_the_misclassified(self, features, labels): 
-        return (self.get_predictions(features) != labels)
+
+    
 
 
 '''if __name__ == '__main__': 

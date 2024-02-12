@@ -24,10 +24,12 @@ class Performance_Calculator(classifier.Calculator_Interface):
     
     def calculate_loss(self, features, weights, labels, predictions):
         if weights is None: return None
-        # By perceptron learning rule, loss function L(w) := sum of abs(X*w)
-        # where X := [[features],[ones_vector]]     2D array (MISCLASSIFIED_feature_instance + 1, feature_type)
-        #       w := weights                        1D array (feature_type)
-        X = np.append(features, np.ones([1, features.shape[1]]), axis=0)
+        # By perceptron learning rule, loss function 
+        #       L(w) := sum of abs(X*w)
+        # where 
+        #       X := [features, ones_vector]        2D array (MISCLASSIFIED_feature_instance, n_feature_type + 1)
+        #       w := weights                        1D array (n_feature_type + 1)
+        X = np.append(features, np.ones([features.shape[0], 1]), axis=1)
         Xw = np.dot(X, weights)
         return np.sum(np.abs(Xw[labels != predictions]))
 

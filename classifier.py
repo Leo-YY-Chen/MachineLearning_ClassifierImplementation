@@ -2,7 +2,7 @@ from datetime import datetime
 import numpy as np
 import os
 import pickle
-from typing import Callable, Sequence, Iterable, Any, Tuple
+from typing import Callable, Sequence, Iterable, Any, Tuple, Union
 
 
 
@@ -66,8 +66,8 @@ class Data_Processor_Interface:
 class Calculator_Interface:
     def calculate_metrics(labels:Iterable[Any], 
                           predictions:Iterable[Any], 
-                          features:Iterable[Sequence[Any]] | None, 
-                          weights:Iterable[Any] | None) -> Metrics:
+                          features:Union[Iterable[Sequence[Any]], None], 
+                          weights:Union[Iterable[Any], None]) -> Metrics:
         pass
 
 
