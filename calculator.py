@@ -14,9 +14,9 @@ class Performance_Calculator(classifier.Calculator_Interface):
         return self.metrics
 
 
-
     def calculate_accuracy(self, labels, predictions):
         return np.sum(predictions == labels) / len(labels)
+
 
 
 

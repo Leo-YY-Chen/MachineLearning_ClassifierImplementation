@@ -2,8 +2,7 @@ from datetime import datetime
 import numpy as np
 import os
 import pickle
-from typing import Callable, Sequence, Iterable, Any
-import data_processor 
+from typing import Callable, Sequence, Iterable, Any, Tuple
 
 
 
@@ -68,13 +67,13 @@ class Data_Processor_Interface:
     def get_ith_fold_data(self, 
                           k:int, i:int, 
                           features:Iterable[Sequence[Any]],
-                          labels:Iterable[Any]) -> Iterable[Sequence[Any]]: ##### PROBLEM: Check return type
+                          labels:Iterable[Any]) -> Tuple[Iterable[Sequence[Any]], Iterable[Any]]:
         pass
 
     def remove_ith_fold_data(self, 
                           k:int, i:int,
                           features:Iterable[Sequence[Any]],
-                          labels:Iterable[Any]) -> Iterable[Sequence[Any]]: ##### PROBLEM: Check return type
+                          labels:Iterable[Any]) -> Tuple[Iterable[Sequence[Any]], Iterable[Any]]:
         pass
 
 
@@ -113,13 +112,17 @@ class Classifier:
         self.information = Information()
         self.metrics = Metrics()
 
+        self.data_processor = None
+        self.calculator = None
+        self.presenter = None
+
     # Assume that   (train_, test_)features:    2D array (feature_type, feature_value)
     #               (train_, test_)labels:      1D array (label)
 
     def k_fold_cross_validation(self, train_features, train_labels, test_features, test_labels, k = 3):
         for i in range(k):
-            self.train(Data_Processor_Interface().get_ith_fold_data(k, i, train_features, train_labels)) ##### Problem: how to decide the implementation of interface?
-            self.valid(Data_Processor_Interface().remove_ith_fold_data(k, i, train_features, train_labels))
+            self.train(self.data_processor.get_ith_fold_data(k, i, train_features, train_labels))
+            self.valid(self.data_processor.remove_ith_fold_data(k, i, train_features, train_labels))
         self.test(test_features, test_labels)
 
     def train(self, features, labels):
@@ -161,13 +164,13 @@ class Classifier:
 
 
     def calculate_metrics(self, labels, predictions):
-        Calculator_Interface().calculate_metrics(labels, predictions)
+        self.calculator.calculate_metrics(labels, predictions)
         
     def show_performance(self):
-        Presenter_Interface().show_performance(self.information, self.metrics)
+        self.presenter.show_performance(self.information, self.metrics)
     
     def save_performance(self):
-        Presenter_Interface().save_performance(self.information, self.metrics)
+        self.presenter.save_performance(self.information, self.metrics)
     
     def save_classifier(self):
         with open(self.get_file_name(), 'wb') as fp:
@@ -178,9 +181,24 @@ class Classifier:
             self.attributes = pickle.load(fp)
 
 
-    
+
+
+
+
+
+    def set_data_processor(self, data_processor:Data_Processor_Interface):
+        self.data_processor = data_processor
+
+    def set_calculator(self, calculator:Calculator_Interface):
+        self.calculator = calculator
+
+    def set_presenter(self, presenter:Presenter_Interface):
+        self.presenter = presenter
 
     
+
+
+
 
     def get_file_name(self):
         return os.path.join(os.getcwd(), 'model/checkpoint', self.information.timestamp) + '.pkl'
@@ -205,7 +223,7 @@ if __name__ == "__main__":
     #######################
     # TEST save and load classifier
     #######################
-    '''def test_save_and_load_classifier():
+    def test_save_and_load_classifier():
         clf = Classifier()
         clf.attributes = {'hyper_parameters':{'k': 10, 'lr': 0.001}, 'parameters':{'weight':list(range(7)) ,'bias':np.array(range(7))}}
         filename = clf.get_file_name()
@@ -220,4 +238,4 @@ if __name__ == "__main__":
                 print("loading fail")
         else:
             print("saving fail")
-    test_save_and_load_classifier()'''
+    test_save_and_load_classifier()

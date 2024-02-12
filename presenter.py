@@ -128,6 +128,20 @@ class Feature_Importance_Presentor:
     def __init__(self) -> None:
         pass
 
+    '''def set_show_and_save_feature_importance(self, train_data, number_repetition=10): ##### refine: depend on cfg, too many lines
+        self.set_features_importance(train_data, number_repetition)
+        filepath = os.path.join(cfg.absolute_ML_HW1_path, f'results\plots', f'feature_importance_{self.filename}')
+        utils.save_bar_chart(filepath, cfg.feature_names, self.features_importance) 
+        message = self.get_feature_importance_message()
+        self.show_message(message)
+        self.save_message(message)
+        return None
+    
+    def get_feature_importance_message(self): ##### refine: depend on cfg. and too ugly
+        message = f""
+        for i in range(len(self.features_importance)):
+            message = message + f"{cfg.feature_names[i] + ': ':<25}{self.features_importance[i]:.3f} \n"
+        return message'''
 
 
 
