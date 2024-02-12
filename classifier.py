@@ -90,7 +90,7 @@ class Classifier:
         self.calculator = calculator
         self.presenter = presenter
 
-    # Assume that   (train_, test_)features:    2D array (feature_type, feature_value)
+    # Assume that   (train_, test_)features:    2D array (feature_instance, feature_type)
     #               (train_, test_)labels:      1D array (label)
 
     def k_fold_cross_validation(self, train_features, train_labels, test_features, test_labels, data_processor:Data_Processor_Interface, k = 3):

@@ -2,7 +2,7 @@ import numpy as np
 import sys
 sys.path.append('..')
 import model.utils as utils
-from model.classifier import Classifier
+from reference.classifier import Classifier
 
 class PDTClassifier(Classifier):
     def __init__(self, max_leaf_impurity=0.2, max_samples_leaf = 1, max_tree_depth=100, ccp_alpha = 0.1):

@@ -37,11 +37,11 @@ class Data_Processor:
 
     def get_ith_fold_data(self, folds_number, ith, features, labels):
         ith_fold_range = self.get_ith_fold_range(folds_number, ith, labels)
-        return features[:, ith_fold_range], labels[ith_fold_range]
+        return features[ith_fold_range, :], labels[ith_fold_range]
         
     def remove_ith_fold_data(self, folds_number, ith, features, labels):
         the_rest_range = self.get_range_without_ith_fold(folds_number, ith, labels)
-        return features[:, the_rest_range], labels[the_rest_range]
+        return features[the_rest_range, :], labels[the_rest_range]
 
     def get_ith_fold_range(self, number_folds, fold_index, labels):
         fold_size = int(len(labels) / number_folds)
@@ -63,13 +63,13 @@ if __name__ == "__main__":
     #######################
     def test_get_ith_fold_data():
         clf = Data_Processor()
-        fea = np.array(np.resize(range(2*7), (2,7)))
+        fea = np.array(np.resize(range(2*7), (7,2)))
         lab = np.array(range(7))
         #print(fea, lab)
         features, labels = clf.get_ith_fold_data(3, 0, fea, lab)
         features1, labels1 = clf.get_ith_fold_data(3, 2, fea, lab)
-        if (features == np.array([[0,1],[7,8]])).all() and (labels == np.array([0,1])).all():
-            if (features1 == np.array([[4,5,6],[11,12,13]])).all() and (labels1 == np.array([4,5,6])).all():
+        if (features == np.array([[0,1],[2,3]])).all() and (labels == np.array([0,1])).all():
+            if (features1 == np.array([[8,9],[10,11],[12,13]])).all() and (labels1 == np.array([4,5,6])).all():
                 print("passing")
             else:
                 print("fail") 
@@ -94,13 +94,13 @@ if __name__ == "__main__":
 
     def test_remove_ith_fold_data():
         clf = Data_Processor()
-        fea = np.array(np.resize(range(2*7), (2,7)))
+        fea = np.array(np.resize(range(2*7), (7,2)))
         lab = np.array(range(7))
         #print(fea, lab)
         features, labels = clf.remove_ith_fold_data(3, 0, fea, lab)
         features1, labels1 = clf.remove_ith_fold_data(3, 2, fea, lab)
-        if (features == np.array([[2,3,4,5,6],[9,10,11,12,13]])).all() and (labels == np.array([2,3,4,5,6])).all():
-            if (features1 == np.array([[0,1,2,3],[7,8,9,10]])).all() and (labels1 == np.array([0,1,2,3])).all():
+        if (features == np.array([[4,5],[6,7],[8,9],[10,11],[12,13]])).all() and (labels == np.array([2,3,4,5,6])).all():
+            if (features1 == np.array([[0,1],[2,3],[4,5],[6,7]])).all() and (labels1 == np.array([0,1,2,3])).all():
                 print("passing")
             else:
                 print("fail") 

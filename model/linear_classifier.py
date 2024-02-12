@@ -2,7 +2,7 @@ import numpy as np
 import sys
 sys.path.append('..')
 import model.utils as utils
-from model.classifier import Classifier
+from reference.classifier import Classifier
 
 
 ## create linear classifier

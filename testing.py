@@ -2,6 +2,7 @@ import numpy as np
 from classifier import Classifier
 import calculator
 import presenter
+from model.knn_classifier import KNNClassifier
 
 
 
@@ -69,3 +70,25 @@ def test_calculate_metrics():
     else:
         print("fail")
 test_calculate_metrics()'''
+
+
+
+
+
+
+
+#######################
+# TEST KNNClassifier
+#######################
+def test_calcualte_distances():
+    knn = KNNClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Performance_Presenter(), 
+                        p_norm = 2)
+    knn.attributes['parameters']['train_features'] = np.array([[0,0],[1,1],[2,2]])
+    
+    distance = knn.calcualte_distances(np.array([1,0]))
+    if distance == np.array([1,1,np.sqrt(5)]):
+        print("passing")
+    else:
+        print("fail")
+test_calcualte_distances()
