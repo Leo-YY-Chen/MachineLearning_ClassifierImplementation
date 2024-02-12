@@ -64,7 +64,10 @@ class Data_Processor_Interface:
 
 
 class Calculator_Interface:
-    def calculate_metrics(labels:Iterable[Sequence[Any]], predictions:Iterable[Sequence[Any]]) -> Metrics:
+    def calculate_metrics(labels:Iterable[Any], 
+                          predictions:Iterable[Any], 
+                          features:Iterable[Sequence[Any]] | None, 
+                          weights:Iterable[Any] | None) -> Metrics:
         pass
 
 
