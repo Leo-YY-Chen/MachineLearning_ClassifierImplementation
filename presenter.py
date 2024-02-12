@@ -5,7 +5,7 @@ import classifier
 
 
 
-class Performance_Presenter:
+class Performance_Presenter(classifier.Presenter_Interface):
     def __init__(self):
         self.information = classifier.Information()
         self.metrics = classifier.Metrics()

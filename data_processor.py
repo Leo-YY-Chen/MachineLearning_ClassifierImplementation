@@ -22,6 +22,19 @@ class Data_Processor:
     def do_data_balancing(self, features, labels):
         return None
     
+    '''def get_k_fold_data(self, folds_number, features, labels):
+        # if is_folds_number_valid() and are_features_labels_size_valid():
+        result = []
+        for i in range(folds_number):
+            train = self.remove_ith_fold_data(folds_number, i, features, labels)
+            test = self.get_ith_fold_data(folds_number, i, features, labels)
+            result.append((train, test))
+        return result'''
+
+
+
+
+
     def get_ith_fold_data(self, folds_number, ith, features, labels):
         ith_fold_range = self.get_ith_fold_range(folds_number, ith, labels)
         return features[:, ith_fold_range], labels[ith_fold_range]
@@ -29,11 +42,6 @@ class Data_Processor:
     def remove_ith_fold_data(self, folds_number, ith, features, labels):
         the_rest_range = self.get_range_without_ith_fold(folds_number, ith, labels)
         return features[:, the_rest_range], labels[the_rest_range]
-    
-
-
-
-
 
     def get_ith_fold_range(self, number_folds, fold_index, labels):
         fold_size = int(len(labels) / number_folds)

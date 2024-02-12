@@ -3,6 +3,7 @@ import numpy as np
 import os
 import pickle
 from typing import Callable, Sequence, Iterable, Any, Tuple
+from data_processor import Data_Processor as data_processor
 
 
 
@@ -26,10 +27,6 @@ class Metrics:
         self.valid_loss = []
 
 
-
-
-
-
 class Information:
     def __init__(self, 
                  type = "DecisionTree_Clustering_NeuralNetwork_etc",
@@ -47,99 +44,75 @@ class Information:
         self.epoch_quantity = epoch_quantity
         self.epoch_number = epoch_number
 
-    def set_information(self, state = "Train/Test/Valid", 
-                epoch_quantity = None,
-                epoch_number = None,
-                fold_quantity = None, 
-                fold_number = None, 
-                ):
-        self.state = state
-        self.fold_quantity = fold_quantity
-        self.fold_number = fold_number
-        self.epoch_quantity = epoch_quantity
-        self.epoch_number = epoch_number
+
 
 
 
 
 
 class Data_Processor_Interface:
-    def get_ith_fold_data(self, 
-                          k:int, i:int, 
+    def get_ith_fold_data(k:int, 
+                          i:int, 
                           features:Iterable[Sequence[Any]],
                           labels:Iterable[Any]) -> Tuple[Iterable[Sequence[Any]], Iterable[Any]]:
         pass
 
-    def remove_ith_fold_data(self, 
-                          k:int, i:int,
-                          features:Iterable[Sequence[Any]],
-                          labels:Iterable[Any]) -> Tuple[Iterable[Sequence[Any]], Iterable[Any]]:
+    def remove_ith_fold_data(k:int, 
+                             i:int,
+                            features:Iterable[Sequence[Any]],
+                            labels:Iterable[Any]) -> Tuple[Iterable[Sequence[Any]], Iterable[Any]]:
         pass
-
-
-
-
 
 
 class Calculator_Interface:
-    def calculate_metrics(self, labels:Iterable[Sequence[Any]], predictions:Iterable[Sequence[Any]]) -> Metrics:
+    def calculate_metrics(labels:Iterable[Sequence[Any]], predictions:Iterable[Sequence[Any]]) -> Metrics:
         pass
-
-    def calculate_feature_importances(self, get_predictions:Callable[[Iterable[Sequence[Any]]], Iterable[Any]], 
-                                        features:Iterable[Sequence[Any]],
-                                        labels:Iterable[Any], 
-                                        number_repetition:int) -> Iterable[float]:
-        pass
-
-
-
 
 
 class Presenter_Interface:
-    def show_performance(self, information:Information, metrics:Metrics) -> None:
+    def show_performance(information:Information, metrics:Metrics) -> None:
         pass
     
-    def save_performance(self, information:Information, metrics:Metrics) -> None:
+    def save_performance(information:Information, metrics:Metrics) -> None:
         pass
+
+
 
 
 
 
 
 class Classifier:
-    def __init__(self):
+    def __init__(self, calculator:Calculator_Interface, presenter:Presenter_Interface):
         self.attributes = {'hyper_parameters':{}, 'parameters':{}}
         self.information = Information()
         self.metrics = Metrics()
-
-        self.data_processor = None
-        self.calculator = None
-        self.presenter = None
+        self.calculator = calculator
+        self.presenter = presenter
 
     # Assume that   (train_, test_)features:    2D array (feature_type, feature_value)
     #               (train_, test_)labels:      1D array (label)
 
-    def k_fold_cross_validation(self, train_features, train_labels, test_features, test_labels, k = 3):
+    def k_fold_cross_validation(self, train_features, train_labels, test_features, test_labels, data_processor:Data_Processor_Interface, k = 3):
         for i in range(k):
-            self.train(self.data_processor.get_ith_fold_data(k, i, train_features, train_labels))
-            self.valid(self.data_processor.remove_ith_fold_data(k, i, train_features, train_labels))
+            self.train(data_processor.remove_ith_fold_data(k, i, train_features, train_labels))
+            self.valid(data_processor.get_ith_fold_data(k, i, train_features, train_labels))
         self.test(test_features, test_labels)
 
     def train(self, features, labels):
-        self.information.set_information("Train")
+        self.set_information("Train")
         self.update_parameters(features, labels)
         self.get_performance(features, labels)
         self.save_classifier()
     
     def test(self, features, labels):
-        self.information.set_information("Test")
+        self.set_information("Test")
         self.get_performance(features, labels) 
         
     def valid(self, features, labels):
-        self.information.set_information("Valid")
+        self.set_information("Valid")
         self.get_performance(features, labels) 
     
-
 
 
 
@@ -151,20 +124,16 @@ class Classifier:
         pass 
 
     def get_performance(self, features, labels):
-        self.metrics = self.calculate_metrics(labels, self.get_predictions(features))
+        self.set_metrics(labels, self.get_predictions(features))
         self.show_performance()
         self.save_performance()
         
     
 
-    
 
 
-
-
-
-    def calculate_metrics(self, labels, predictions):
-        self.calculator.calculate_metrics(labels, predictions)
+    def set_metrics(self, labels, predictions):
+        self.metrics = self.calculator.calculate_metrics(labels, predictions)
         
     def show_performance(self):
         self.presenter.show_performance(self.information, self.metrics)
@@ -180,23 +149,18 @@ class Classifier:
         with open(pkl_file_name, 'rb') as fp:
             self.attributes = pickle.load(fp)
 
-
-
-
-
-
-
-    def set_data_processor(self, data_processor:Data_Processor_Interface):
-        self.data_processor = data_processor
-
-    def set_calculator(self, calculator:Calculator_Interface):
-        self.calculator = calculator
-
-    def set_presenter(self, presenter:Presenter_Interface):
-        self.presenter = presenter
+    def set_information(self, state = "Train/Test/Valid", 
+                        epoch_quantity = None,
+                        epoch_number = None,
+                        fold_quantity = None, 
+                        fold_number = None):
+        self.information.state = state
+        self.information.fold_quantity = fold_quantity
+        self.information.fold_number = fold_number
+        self.information.epoch_quantity = epoch_quantity
+        self.information.epoch_number = epoch_number
 
     
-
 
 
 
@@ -209,21 +173,11 @@ class Classifier:
 
 
 
-
-
-
-
-        
-
-    
-        
-    
-
 if __name__ == "__main__":
     #######################
-    # TEST save and load classifier
+    # TEST get_file_name and save & load classifier
     #######################
-    def test_save_and_load_classifier():
+    '''def test_save_and_load_classifier():
         clf = Classifier()
         clf.attributes = {'hyper_parameters':{'k': 10, 'lr': 0.001}, 'parameters':{'weight':list(range(7)) ,'bias':np.array(range(7))}}
         filename = clf.get_file_name()
@@ -238,4 +192,4 @@ if __name__ == "__main__":
                 print("loading fail")
         else:
             print("saving fail")
-    test_save_and_load_classifier()
+    test_save_and_load_classifier()'''

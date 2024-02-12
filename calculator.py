@@ -23,25 +23,24 @@ class Performance_Calculator(classifier.Calculator_Interface):
 
 
 
-class Feature_Importance_Calculator(classifier.Calculator_Interface):
-    def __init__(self):
-        pass
+class Feature_Importance_Calculator():
+    def __init__(self, classifier:classifier.Classifier):
+        self.classifier = classifier
 
     # Assume that   features:    2D array (feature_type, feature_value)
     #               labels:      1D array (label)
-    #               classifier:  classifier.Classifier()
 
-    def calculate_feature_importances(self, get_predictions, features, labels, number_repetition=10):
+    def calculate_feature_importances(self, features, labels, number_repetition=10):
         # ref: https://scikit-learn.org/stable/modules/permutation_importance.html
-        return [self.get_ith_feature_importance(get_predictions, ith, features, labels, number_repetition) for ith in range(features.shape[1])]
+        return [self.get_ith_feature_importance(self.classifier.get_predictions, ith, features, labels, number_repetition) for ith in range(features.shape[1])]
     
     
 
-    def get_ith_feature_importance(self, get_predictions, ith, features, labels, number_repetition):
+    def get_ith_feature_importance(self, ith, features, labels, number_repetition):
         result = 0
         for repeat in range(number_repetition):
                 shuffled_features = self.shuffle_ith_feature_column(self, ith, features)
-                predictions = get_predictions(shuffled_features)
+                predictions = self.classifier.get_predictions(shuffled_features)
                 result += self.calculate_accuracy(labels, predictions) 
         return result/number_repetition
 
