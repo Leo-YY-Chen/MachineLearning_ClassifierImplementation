@@ -1,7 +1,13 @@
 import pandas as pd
 import numpy as np
+import classifier
 
-class Data_Processor:
+
+
+
+
+
+class Data_Processor(classifier.Data_Processor_Interface):
     def __init__(self):
         pass
         
@@ -11,8 +17,6 @@ class Data_Processor:
     def preprocess(self, features, labels):
         return None
     
-
-
 
 
 

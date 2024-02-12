@@ -3,7 +3,6 @@ import numpy as np
 import os
 import pickle
 from typing import Callable, Sequence, Iterable, Any, Tuple
-from data_processor import Data_Processor as data_processor
 
 
 
@@ -95,8 +94,9 @@ class Classifier:
 
     def k_fold_cross_validation(self, train_features, train_labels, test_features, test_labels, data_processor:Data_Processor_Interface, k = 3):
         for i in range(k):
-            self.train(data_processor.remove_ith_fold_data(k, i, train_features, train_labels))
-            self.valid(data_processor.get_ith_fold_data(k, i, train_features, train_labels))
+            self.set_information(fold_quantity=k, fold_number=i)
+            self.train(*data_processor.remove_ith_fold_data(k, i, train_features, train_labels))
+            self.valid(*data_processor.get_ith_fold_data(k, i, train_features, train_labels))
         self.test(test_features, test_labels)
 
     def train(self, features, labels):
@@ -154,11 +154,15 @@ class Classifier:
                         epoch_number = None,
                         fold_quantity = None, 
                         fold_number = None):
-        self.information.state = state
-        self.information.fold_quantity = fold_quantity
-        self.information.fold_number = fold_number
-        self.information.epoch_quantity = epoch_quantity
-        self.information.epoch_number = epoch_number
+        #print(state, fold_quantity, fold_number, epoch_quantity, epoch_number)
+        self.information.state = state if state != "Train/Test/Valid" else self.information.state
+        self.information.fold_quantity = self.information.fold_quantity if fold_quantity is None else fold_quantity
+        self.information.fold_number = self.information.fold_number if fold_number is None else fold_number
+        self.information.epoch_quantity = self.information.epoch_quantity if epoch_quantity is None else epoch_quantity
+        self.information.epoch_number = self.information.epoch_number if epoch_number is None else epoch_number
+
+        if state == "Test":
+            self.information.fold_quantity = None
 
     
 

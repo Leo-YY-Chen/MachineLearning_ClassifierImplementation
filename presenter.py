@@ -13,15 +13,12 @@ class Performance_Presenter(classifier.Presenter_Interface):
     def show_performance(self, information:classifier.Information, metrics:classifier.Metrics):
         self.set_information_and_metrics(information, metrics)
         self.show_message()
-        self.show_figure()
     
     def save_performance(self, information:classifier.Information, metrics:classifier.Metrics):
         self.set_information_and_metrics(information, metrics)
         if not self.is_classifier_name_existing():
             self.save_classifier_name()
         self.save_message()
-        self.save_figure()
-
 
 
 
@@ -31,40 +28,71 @@ class Performance_Presenter(classifier.Presenter_Interface):
         self.information = information
         self.metrics = metrics
 
-
-    
-
-
     def show_message(self):
         print(self.get_message())
-        
-    def show_figure(self):
-        self.show_train_valid_accuracy_figure()
-        self.show_train_valid_loss_figure()
-
-    def save_classifier_name(self):
-        with open(os.path.join(os.getcwd(), 'results\log', self.information.type) +'.txt', 'a') as f:
-            f.write(f"------------------------------------------------------------------------------- \n")
-            f.write(f"{self.information.timestamp} \n")
 
     def save_message(self):
         with open(os.path.join(os.getcwd(), 'results\log', self.information.type) +'.txt', 'a') as f:
                 f.write(f"{self.get_message()} \n")
 
-    def save_figure(self):
-        self.save_train_valid_accuracy_figure()
-        self.save_train_valid_loss_figure()
+    def is_classifier_name_existing(self):
+        with open(os.path.join(os.getcwd(), 'results\log', self.information.type) +'.txt', 'r') as fp:
+            for line_number, line in enumerate(fp):
+                if self.information.timestamp in line:
+                    return True
+        return False
         
-
-
-
-
+    def save_classifier_name(self):
+        with open(os.path.join(os.getcwd(), 'results\log', self.information.type) +'.txt', 'a') as f:
+            f.write(f"------------------------------------------------------------------------------- \n")
+            f.write(f"{self.information.timestamp} \n")
 
 
 
     def get_message(self):
         return self.get_header_message() + self.get_metrics_message()
+
+    def get_header_message(self):
+        fold_info = "" if self.information.fold_quantity == None else f" Fold {self.information.fold_number + 1}/{self.information.fold_quantity}" 
+        epoch_info = "" if self.information.epoch_quantity == None else f" Epoch {self.information.epoch_number + 1}/{self.information.epoch_quantity}"
+        return f"{self.information.state + fold_info + epoch_info}: "
     
+    def get_metrics_message(self):
+        accuracy_message = "" if self.metrics.accuracy == None else f"accuracy = {self.metrics.accuracy:.3f}    "
+        loss_message = "" if self.metrics.loss == None else f"loss = {self.metrics.loss:.3f}    "
+        return accuracy_message + loss_message
+
+
+    
+
+
+
+class Iterative_Performance_Presenter(Performance_Presenter):
+    def __init__(self):
+        super().__init__()
+    
+    def show_performance(self, information:classifier.Information, metrics:classifier.Metrics):
+        super().show_performance(information, metrics)
+        self.show_figure()
+    
+    def save_performance(self, information:classifier.Information, metrics:classifier.Metrics):
+        super().save_performance(information, metrics)
+        self.save_figure()
+
+
+
+
+    def show_figure(self):
+        self.show_train_valid_accuracy_figure()
+        self.show_train_valid_loss_figure()
+
+    def save_figure(self):
+        self.save_train_valid_accuracy_figure()
+        self.save_train_valid_loss_figure()
+
+
+
+
     def show_train_valid_accuracy_figure(self):
         self.get_figure(self.metrics.train_accuracy, self.metrics.valid_accuracy, 'accuracy')
         plt.show()
@@ -83,20 +111,8 @@ class Performance_Presenter(classifier.Presenter_Interface):
         self.get_figure(self.metrics.train_loss, self.metrics.valid_loss, metric)
         plt.savefig(os.path.join(os.getcwd(), 'results', 'figure', f'{metric}', f'{self.information.type}_{self.information.timestamp}') + '.png')
 
+                 
 
-
-
-
-
-    def get_header_message(self):
-        fold_info = "" if self.information.fold_quantity == None else f" Fold {self.information.fold_number + 1}/{self.information.fold_quantity}" 
-        epoch_info = "" if self.information.epoch_quantity == None else f" Epoch {self.information.epoch_number + 1}/{self.information.epoch_quantity}"
-        return f"{self.information.state + fold_info + epoch_info}: "
-    
-    def get_metrics_message(self):
-        accuracy_message = "" if self.metrics.accuracy == None else f"accuracy = {self.metrics.accuracy:.3f}    "
-        loss_message = "" if self.metrics.loss == None else f"loss = {self.metrics.loss:.3f}    "
-        return accuracy_message + loss_message
 
     def get_figure(self, train_list, valid_list, metric = "accuracy/loss/..."):
         fig, ax = plt.subplots(figsize=(8,4))
@@ -104,21 +120,6 @@ class Performance_Presenter(classifier.Presenter_Interface):
         plt.plot(train_list, label=f'train {metric}')
         plt.plot(valid_list, label=f'valid {metric}', linestyle='--')
         plt.legend()
-
-
-
-
-
-
-
-    def is_classifier_name_existing(self):
-        with open(os.path.join(os.getcwd(), 'results\log', self.information.type) +'.txt', 'r') as fp:
-            for line_number, line in enumerate(fp):
-                if self.information.timestamp in line:
-                    return True
-        return False
-                 
-
 
 
 
@@ -150,7 +151,7 @@ class Feature_Importance_Presentor:
 
 if __name__ == "__main__":
     #######################
-    # TEST perfomance
+    # TEST message
     #######################
     '''def test_get_state_message():
         clf = Performance_Presenter()
@@ -164,9 +165,6 @@ if __name__ == "__main__":
 
 
 
-    #######################
-    # TEST perfomance
-    #######################
     '''def test_is_classifier_name_existing():
         info = classifier.Information(type="TESTING")
         mtcs = classifier.Metrics()
@@ -206,10 +204,15 @@ if __name__ == "__main__":
             print("passing")
         else:
             print("fail")
-    test_get_header_message()
+    test_get_header_message()'''
 
 
-    def test_save_train_valid_loss_figure():
+
+
+    #######################
+    # TEST figure
+    #######################
+    '''def test_save_train_valid_loss_figure():
         information = classifier.Information(type="TESTING")
         information.epoch_quantity = 1000
         information.epoch_number = 666
@@ -217,7 +220,7 @@ if __name__ == "__main__":
         metrics = classifier.Metrics()
         metrics.train_loss = [i*np.pi for i in range(1000)]
         metrics.valid_loss = [i for i in range(1000)]
-        presenter = Performance_Presenter(information, metrics)
+        presenter = Iterative_Performance_Presenter(information, metrics)
         
         presenter.save_train_valid_loss_figure()
     test_save_train_valid_loss_figure()
@@ -232,21 +235,21 @@ if __name__ == "__main__":
         metrics = classifier.Metrics()
         metrics.train_accuracy = [i*np.e for i in range(1000)]
         metrics.valid_accuracy = [i*np.pi for i in range(1000)]
-        presenter = Performance_Presenter(information, metrics)
+        presenter = Iterative_Performance_Presenter(information, metrics)
         
         presenter.save_train_valid_accuracy_figure()
     test_save_train_valid_accuracy_figure()'''
 
 
-    '''def test_show_train_valid_loss_figure():
-        information = classifier.Information(type="TESTING")
-        information.epoch_quantity = 1000
-        information.epoch_number = 666
-        information.fold_number = 0
-        metrics = classifier.Metrics()
-        metrics.train_loss = [i*np.pi for i in range(1000)]
-        metrics.valid_loss = [i for i in range(1000)]
-        presenter = Performance_Presenter(information, metrics)
+    def test_show_train_valid_loss_figure():
+        presenter = Iterative_Performance_Presenter()
+        presenter.information = classifier.Information(type="TESTING")
+        presenter.information.epoch_quantity = 1000
+        presenter.information.epoch_number = 666
+        presenter.information.fold_number = 0
+        presenter.metrics = classifier.Metrics()
+        presenter.metrics.train_loss = [i*np.pi for i in range(1000)]
+        presenter.metrics.valid_loss = [i for i in range(1000)]
         
         presenter.show_train_valid_loss_figure()
     test_show_train_valid_loss_figure()
@@ -254,17 +257,17 @@ if __name__ == "__main__":
 
 
     def test_show_train_valid_accuracy_figure():
-        information = classifier.Information(type="TESTING")
-        information.epoch_quantity = 1000
-        information.epoch_number = 666
-        information.fold_number = 0
-        metrics = classifier.Metrics()
-        metrics.train_accuracy = [i*np.e for i in range(1000)]
-        metrics.valid_accuracy = [i*np.pi for i in range(1000)]
-        presenter = Performance_Presenter(information, metrics)
+        presenter = Iterative_Performance_Presenter()
+        presenter.information = classifier.Information(type="TESTING")
+        presenter.information.epoch_quantity = 1000
+        presenter.information.epoch_number = 666
+        presenter.information.fold_number = 0
+        presenter.metrics = classifier.Metrics()
+        presenter.metrics.train_accuracy = [i*np.e for i in range(1000)]
+        presenter.metrics.valid_accuracy = [i*np.pi for i in range(1000)]
         
         presenter.show_train_valid_accuracy_figure()
-    test_show_train_valid_accuracy_figure()'''
+    test_show_train_valid_accuracy_figure()
 
 
 
