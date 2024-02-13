@@ -73,11 +73,13 @@ class Iterative_Performance_Presenter(Performance_Presenter):
     
     def show_performance(self, information:classifier.Information, metrics:classifier.Metrics):
         super().show_performance(information, metrics)
-        self.show_figure()
+        if self.is_looping_over():
+            self.show_figure()
     
     def save_performance(self, information:classifier.Information, metrics:classifier.Metrics):
         super().save_performance(information, metrics)
-        self.save_figure()
+        if self.is_looping_over():
+            self.save_figure()
 
 
 
@@ -90,36 +92,50 @@ class Iterative_Performance_Presenter(Performance_Presenter):
         self.save_train_valid_accuracy_figure()
         self.save_train_valid_loss_figure()
 
+    def is_looping_over(self):
+        if len(self.metrics.train_accuracy) == self.information.epoch_quantity:
+            if len(self.metrics.valid_accuracy) == self.information.epoch_quantity:
+                if self.information.state == "Train" or self.information.state == "Valid": 
+                    return True
+        else:
+            return False
+
 
 
 
     def show_train_valid_accuracy_figure(self):
         self.get_figure(self.metrics.train_accuracy, self.metrics.valid_accuracy, 'accuracy')
         plt.show()
+        plt.close()
 
     def show_train_valid_loss_figure(self):
         self.get_figure(self.metrics.train_loss, self.metrics.valid_loss, 'loss')
         plt.show()
+        plt.close()
 
     def save_train_valid_accuracy_figure(self):
         metric = 'accuracy'
         self.get_figure(self.metrics.train_accuracy, self.metrics.valid_accuracy, metric)
-        plt.savefig(os.path.join(os.getcwd(), 'results', 'figure', f'{metric}', f'{self.information.type}_{self.information.timestamp}') + '.png')
+        plt.savefig(os.path.join(os.getcwd(), 'results', 'figure', f'{metric}', f'{self.get_file_infomation()}') + '.png')
+        plt.close()
 
     def save_train_valid_loss_figure(self):
         metric = 'loss'
         self.get_figure(self.metrics.train_loss, self.metrics.valid_loss, metric)
-        plt.savefig(os.path.join(os.getcwd(), 'results', 'figure', f'{metric}', f'{self.information.type}_{self.information.timestamp}') + '.png')
-
+        plt.savefig(os.path.join(os.getcwd(), 'results', 'figure', f'{metric}', f'{self.get_file_infomation()}') + '.png')
+        plt.close()
                  
 
 
     def get_figure(self, train_list, valid_list, metric = "accuracy/loss/..."):
         fig, ax = plt.subplots(figsize=(8,4))
-        plt.title(f"{metric}")
+        plt.title(f"{metric} {self.get_file_infomation()}")
         plt.plot(train_list, label=f'train {metric}')
         plt.plot(valid_list, label=f'valid {metric}', linestyle='--')
         plt.legend()
+
+    def get_file_infomation(self):
+        return f'{self.information.type}_{self.information.timestamp}_Fold{self.information.fold_number}'
 
 
 

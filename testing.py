@@ -4,6 +4,7 @@ import classifier
 import calculator
 import presenter
 from model.knn_classifier import KNNClassifier
+from model.linear_classifier import LinearClassifier
 
 
 
@@ -204,7 +205,7 @@ test_k_fold_cross_validation()'''
 #######################
 # TEST LinearClassifier
 #######################
-def test_2D_1D_array_broadcast_multiply():
+'''def test_2D_1D_array_broadcast_multiply():
     twoDArray = np.array([[1,2],[3,4],[5,6]])
     oneDArray = np.expand_dims(np.array([1,-1,3]), axis=1)
     
@@ -213,3 +214,76 @@ def test_2D_1D_array_broadcast_multiply():
     else:
         print("fail")
 test_2D_1D_array_broadcast_multiply()
+
+
+
+def test_get_predictions():
+    lc = LinearClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Iterative_Performance_Presenter())
+    lc.attributes["parameters"]['w'] = np.array([-1, 1, 0])
+    lc.information.loss_type = "L1"
+    features = np.array([[1,-2],[-3,4],[5,-6],[0,1]])
+
+    if (lc.get_predictions(features) == np.array([-1,1,-1,1])).all():
+        print("passing")
+    else:
+        print("fail")
+test_get_predictions()
+
+
+def test_get_predictions():
+    lc = LinearClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Iterative_Performance_Presenter(),
+                        lr=1)
+    lc.attributes["parameters"]['w'] = np.array([-1, 1, 0])
+    lc.information.loss_type = "L1"
+    features = np.array([[1,-2],[-3,4],[5,-6],[0,1]])
+    labels = np.array([1,1,1,1])
+    lc.update_parameters(features, labels)
+    if (lc.attributes["parameters"]['w'] == np.array([1.25,-2,0.25])).all():
+        print("passing")
+    else:
+        print("fail")
+test_get_predictions()'''
+
+
+
+'''def test_train():
+    lc = LinearClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Iterative_Performance_Presenter(),
+                        lr=1)
+    lc.information.loss_type = "L1"
+    lc.attributes["parameters"]['w'] = np.array([-1, 1, 0])
+    features = np.array([[1,-2],[-3,4],[5,-6],[0,1]])
+    labels = np.array([1,1,1,1])
+
+    lc.train(features, labels)
+test_train()'''
+
+
+
+'''def test_test():
+    lc = LinearClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Iterative_Performance_Presenter(),
+                        lr=1)
+    lc.information.loss_type = "L1"
+    lc.attributes["parameters"]['w'] = np.array([-1, 1, 0])
+    test_features = np.array([[1,-2],[-3,4],[5,-6],[0,1]])
+    test_labels = np.array([1,1,1,1])
+
+    lc.test(test_features, test_labels)
+test_test()'''
+
+
+'''def test_k_fold_cross_validation():
+    lc = LinearClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Iterative_Performance_Presenter(),
+                        lr=1)
+    lc.information.loss_type = "L1"
+    lc.attributes["parameters"]['w'] = np.array([-1, 1, 0])
+    test_features = np.array([[1,-2],[-3,4],[5,-6],[0,1]])
+    test_labels = np.array([1,1,1,1])
+    train_features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4],[5,5]])
+    train_labels = np.array([1, -1, 1, -1, 1, -1])
+    lc.k_fold_cross_validation(train_features, train_labels, test_features, test_labels, data_processor.Data_Processor())
+test_k_fold_cross_validation()'''
