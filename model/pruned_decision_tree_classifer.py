@@ -16,7 +16,7 @@ class PDTClassifier(Classifier):
 
     def update_weights(self, dataset):
         self.weights = {"features":dataset.features, "labels":dataset.labels}
-        self.root = utils.PrunedDecisionTreeNode(**self.hyper_parameters)
+        self.root = utils.PrunedDecisionTree(**self.hyper_parameters)
         self.root.build_and_prune_the_tree(dataset)
         return None
     
@@ -44,7 +44,7 @@ if __name__ == '__main__':
                         'max_tree_depth':10,
                         'alpha':0.1}
 
-    dt = utils.PrunedDecisionTreeNode(**hyper_parameters)
+    dt = utils.PrunedDecisionTree(**hyper_parameters)
     dt.build_the_tree(dataset)
     dt.show_the_branch()
     print(f'----------------do pruning------------------')

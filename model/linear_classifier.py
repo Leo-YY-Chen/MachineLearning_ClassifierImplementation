@@ -2,14 +2,14 @@ import sys
 sys.path.append('..')
 import numpy as np
 from classifier import Classifier, Calculator_Interface, Presenter_Interface, Data_Processor_Interface
-import model.utils as utils
 
 
-## create linear classifier
+
 class LinearClassifier(Classifier):
-    def __init__(self, calculator:Calculator_Interface, presenter:Presenter_Interface, lr=0.001, epoch = 10):
+    def __init__(self, calculator:Calculator_Interface, presenter:Presenter_Interface, lr=0.001, epoch = 10, loss_type="L1"):
         super().__init__(calculator, presenter)
         self.information.type = 'LC'
+        self.information.loss_type = loss_type
         self.attributes["parameters"] = {'w': None}
         self.attributes["hyper_parameters"] = {'lr': lr, 'epoch':epoch}
         
@@ -35,8 +35,6 @@ class LinearClassifier(Classifier):
 
 
     
-
-
     
     def update_parameters(self, features, labels):
         self.check_weights(features) 
@@ -49,13 +47,13 @@ class LinearClassifier(Classifier):
         predictions = np.ones(Xw.shape)
         predictions[Xw < 0] = -1
         return predictions
-    
-
-
 
     def check_weights(self, features):
         if self.attributes['parameters']['w'] is None:
             self.attributes['parameters']['w'] = np.random.rand(features.shape[1] + 1)
+
+
+
 
 
 
@@ -70,6 +68,11 @@ class LinearClassifier(Classifier):
                                                          self.information.loss_type)
         self.reset_train_valid_accuracy_loss()
         self.set_train_valid_accuracy_loss()
+
+
+
+
+
 
     def reset_train_valid_accuracy_loss(self):
         if self.is_looping_starting():
