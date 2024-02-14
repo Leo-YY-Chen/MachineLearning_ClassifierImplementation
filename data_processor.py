@@ -61,6 +61,34 @@ class Data_Processor(classifier.Data_Processor_Interface):
 
 
 
+    '''def get_datasets_for_children(self, dataset, major_feature_index):
+        left_indices, right_indices = self.get_indices_by_major_feature(dataset.features, major_feature_index)
+        left_dataset = dataset.get_subset(left_indices)
+        right_dataset = dataset.get_subset(right_indices)
+        return left_dataset, right_dataset
+    
+    def get_indices_by_major_feature(self, features, major_feature_index):
+        median = np.median(features, axis=0)[major_feature_index]
+        left_indices = features[:, major_feature_index] > median
+        right_indices = features[:, major_feature_index] <= median
+        return left_indices, right_indices'''
+    
+    def get_dataset_bigger_than_median(self, dataset, major_feature_index):
+        median = np.median(dataset.features, axis=0)[major_feature_index]
+        left_indices = dataset.features[:, major_feature_index] > median
+        left_dataset = dataset.get_subset(left_indices)
+        return left_dataset
+    
+    def get_dataset_not_bigger_than_median(self, dataset, major_feature_index):
+        median = np.median(dataset.features, axis=0)[major_feature_index]
+        right_indices = dataset.features[:, major_feature_index] <= median
+        right_dataset = dataset.get_subset(right_indices)
+        return right_dataset
+    
+
+
+
+
 if __name__ == "__main__":
     #######################
     # TEST getting data

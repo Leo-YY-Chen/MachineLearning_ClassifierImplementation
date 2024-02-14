@@ -15,7 +15,7 @@ class DTClassifier(Classifier):
 
     def update_weights(self, dataset):
         self.weights = {"features":dataset.features, "labels":dataset.labels}
-        self.root = utils.DecisionTree(**self.hyper_parameters)
+        self.root = utils.DecisionTreeNode(**self.hyper_parameters)
         self.root.build_the_tree(dataset)
         return None
     

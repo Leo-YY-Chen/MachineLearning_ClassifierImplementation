@@ -4,6 +4,22 @@ import classifier
 
 
 
+class Calculator:
+    def __init__(self) -> None:
+        pass
+
+    # Assume that   labels:      1D array (label)
+
+    def calculate_entropy(self, labels):
+        # Entropy := - sum_i=1~n (p_i * log(p_i))
+        label_list = list(set(labels))
+        prob_list = [np.sum(labels==label)/len(labels) for label in label_list]
+        entropy_list = [(0 if prob==0 else prob*np.log(prob)) for prob in prob_list]
+        return -np.sum(entropy_list)
+
+
+
+
 
 class Performance_Calculator(classifier.Calculator_Interface):
     def __init__(self):
@@ -40,7 +56,6 @@ class Performance_Calculator(classifier.Calculator_Interface):
 
 
 
-
         
         
     def calculate_L1_loss(self, features, weights, labels):
@@ -71,11 +86,6 @@ class Performance_Calculator(classifier.Calculator_Interface):
         sign = [(xw_minus_y/np.abs(xw_minus_y) if xw_minus_y != 0 else 0) for xw_minus_y in XW_minus_Y]
         return 1/len(labels) * np.sum( np.expand_dims(sign, axis=1) * X, axis=0)
     
-
-
-
-
-    
     def take_linear_function(self, features, weights):
         # Linear function 
         #       f(x) := x*w+c = [x, 1]*[w, c] = X*W
@@ -87,6 +97,27 @@ class Performance_Calculator(classifier.Calculator_Interface):
         XW = np.dot(X, weights)
         return XW
     
+
+
+
+
+
+    def calculate_entropy(self, labels):
+        # Entropy := - sum_i=1~n (p_i * log(p_i))
+        label_list = list(set(labels))
+        prob_list = [np.sum(labels==label)/len(labels) for label in label_list]
+        entropy_list = [(0 if prob==0 else prob*np.log(prob)) for prob in prob_list]
+        return -np.sum(entropy_list)
+    
+    def calculate_information_gains(self, features, labels, parent_entropy):
+        IGs = []
+        for i, median in enumerate(np.median(features, axis=0)):
+            left_labels = labels[features[:,i] > median]
+            right_labels = labels[features[:,i] <= median]
+            children_entropy = self.calculate_entropy(left_labels) + self.calculate_entropy(right_labels)
+            IGs.append(parent_entropy - children_entropy)
+        IGs[IGs==0] = -100 # IG = 0 means the feature owing only two kind of values and it should be ignore  
+        return IGs
 
 
 
@@ -132,7 +163,7 @@ class Feature_Importance_Calculator():
 
 if __name__ == "__main__":
     #######################
-    # TEST getting feature importance
+    # TEST feature importance
     #######################
     '''def test_shuffle_ith_feature_column():
         fic = Feature_Importance_Calculator()
@@ -150,9 +181,9 @@ if __name__ == "__main__":
 
 
     #######################
-    # TEST calculator loss, gradient
+    # TEST performance
     #######################
-    def test_take_linear_function():
+    '''def test_take_linear_function():
         calculator = Performance_Calculator()
         features = np.array([[1,2],[3,4],[5,6],[0,1]])
         weights = np.array([1,-1,3])
@@ -186,4 +217,29 @@ if __name__ == "__main__":
             print("passing")
         else:
             print("fail")
-    test_calculate_L1_loss()
+    test_calculate_L1_loss()'''
+
+
+
+    #######################
+    # TEST syntax
+    #######################
+    '''def test_calculate_entropy():
+        calculator = Calculator()
+        if calculator.calculate_entropy(np.array([1,1,-1,-1]))==np.log(2):
+            print("passing")
+        else:
+            print("fail")
+    test_calculate_entropy()'''
+
+
+
+    #######################
+    # TEST syntax
+    #######################
+    '''def test_len_of_1Darray():
+        if len(np.array([1,1,1,1]))==4:
+            print("passing")
+        else:
+            print("fail")
+    test_len_of_1Darray()'''

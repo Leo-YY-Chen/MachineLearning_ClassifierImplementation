@@ -2,6 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import classifier
+import model.utils
+import sys
+sys.path.append('..')
+import data.config as cfg
 
 
 
@@ -141,7 +145,7 @@ class Iterative_Performance_Presenter(Performance_Presenter):
 
 
 
-class Feature_Importance_Presentor:
+class Feature_Importance_Presenter:
     def __init__(self) -> None:
         pass
 
@@ -160,6 +164,32 @@ class Feature_Importance_Presentor:
             message = message + f"{cfg.feature_names[i] + ': ':<25}{self.features_importance[i]:.3f} \n"
         return message'''
 
+
+
+
+
+class Tree_Presenter:
+    def __init__(self, treenode:model.utils.TreeNode):
+        self.treenode = treenode
+
+    def show_the_branch(self):
+        if self.treenode.is_leaf():
+            self.print_indent(self.treenode)
+            print(f"class: {self.treenode.major_label}")
+            
+        else:
+            self.print_indent(self.treenode)
+            print(f"{cfg.feature_names[self.treenode.decision_arguments['feature_index']]} > {self.treenode.decision_arguments['feature_median']:.3f}")
+            self.treenode.left_child.show_the_branch()
+            self.print_indent(self.treenode)
+            print(f"{cfg.feature_names[self.treenode.decision_arguments['feature_index']]} <= {self.treenode.decision_arguments['feature_median']:.3f}")
+            self.treenode.right_child.show_the_branch()
+
+    def print_indent(self, treenode:model.utils.TreeNode):
+        for i in range(treenode.depth - 1):
+            print(f"|   ", end ='')
+        print(f"|---", end='')
+      
 
 
 
@@ -257,7 +287,7 @@ if __name__ == "__main__":
     test_save_train_valid_accuracy_figure()'''
 
 
-    def test_show_train_valid_loss_figure():
+    '''def test_show_train_valid_loss_figure():
         presenter = Iterative_Performance_Presenter()
         presenter.information = classifier.Information(type="TESTING")
         presenter.information.epoch_quantity = 1000
@@ -283,7 +313,7 @@ if __name__ == "__main__":
         presenter.metrics.valid_accuracy = [i*np.pi for i in range(1000)]
         
         presenter.show_train_valid_accuracy_figure()
-    test_show_train_valid_accuracy_figure()
+    test_show_train_valid_accuracy_figure()'''
 
 
 
@@ -404,3 +434,19 @@ if __name__ == "__main__":
     test_save_performance()'''
 
     
+
+    #######################
+    # TEST tree presenter
+    #######################
+    def test_build_the_tree():
+        dt = model.utils.DecisionTree(**{'max_leaf_impurity':0.2, # the maximum of entropy in each leaves
+                                 'max_samples_leaf':2,   # the maximum required samples in each leaves
+                                 'max_tree_depth':2})
+        dataset = model.utils.Dataset()
+        dataset.features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4],[5,5]])
+        dataset.labels = np.array([1, -1, 1, -1, -1, -1])
+        dt.build_the_tree(dataset)
+        presenter = Tree_Presenter(dt)
+
+        presenter.show_the_branch()
+    test_build_the_tree()

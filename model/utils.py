@@ -108,6 +108,18 @@ class Dataset:
 
 
 
+class Decision_Tree_Hyperparameters:
+    def __init__(self):
+        self.max_leaf_impurity = None   # The maximum of entropy in each leaf node
+        self.max_samples_leaf = None    # The maximum required samples in each leaf node
+        self.max_tree_depth = None      # The maximum of depth of the tree
+
+        # To do cost complexity pruning,
+        # ref: https://scikit-learn.org/stable/modules/tree.html#minimal-cost-complexity-pruning
+        self.ccp_alpha = None           # Pruning stops when the pruned tree’s minimal alpha_eff is greater than the ccp_alpha parameter.
+
+
+
 
 class TreeNode:
     def __init__(self, depth=1):
@@ -162,37 +174,32 @@ class TreeNode:
 
     
     
-    
-        
-
-
-
 
 
 class DecisionTreeNode(TreeNode):
-    def __init__(self, depth = 1, **hyper_parameters):
+    def __init__(self, hyper_parameters:Decision_Tree_Hyperparameters, depth = 1):
         super().__init__(depth)
-        self.hyper_parameters = hyper_parameters # max_leaf_impurity, max_samples_leaf, max_tree_depth
+        self.hyper_parameters = hyper_parameters
         self.major_feature = {'index':None, 'median':None}
         self.major_label = np.nan
         self.entropy = 0
 
-    def build_tree(self, dataset):
-        self.set_attributes(dataset)
+    def build_tree(self, dataset):  ##### REFACTOR: ugly get_dataset approach
+        self.set_attributes(dataset.features, dataset.labels)
         if self.is_building_finished(dataset.labels):
             return
-        self.set_child_nodes()
+        self.set_child_nodes()      
         self.left_child.build_tree(data_processor().get_dataset_bigger_than_median(dataset, self.major_feature['index']))
         self.right_child.build_tree(data_processor().get_dataset_not_bigger_than_median(dataset, self.major_feature['index']))
 
     def is_building_finished(self, labels):
         if len(labels) == 1:
             return True 
-        elif self.entropy <= self.hyper_parameters['max_leaf_impurity']:
+        elif self.entropy <= self.hyper_parameters.max_leaf_impurity:
             return True 
-        elif len(labels) <= self.hyper_parameters['max_samples_leaf']:
+        elif len(labels) <= self.hyper_parameters.max_samples_leaf:
             return True
-        elif self.depth >= self.hyper_parameters['max_tree_depth']:
+        elif self.depth >= self.hyper_parameters.max_tree_depth:
             return True
         else:
             return False
@@ -201,13 +208,13 @@ class DecisionTreeNode(TreeNode):
 
 
     def set_child_nodes(self):
-        self.left_child = DecisionTreeNode(self.depth+1, **self.hyper_parameters)
-        self.right_child = DecisionTreeNode(self.depth+1, **self.hyper_parameters)
+        self.left_child = DecisionTreeNode(self.hyper_parameters, self.depth+1)
+        self.right_child = DecisionTreeNode(self.hyper_parameters, self.depth+1)
         
-    def set_attributes(self, dataset):
-        self.set_major_feature(dataset.features, dataset.labels)
-        self.set_major_label(dataset.labels)
-        self.entropy = calculator().calculate_entropy(dataset.labels)
+    def set_attributes(self, features, labels):
+        self.set_major_feature(features, labels)
+        self.set_major_label(labels)
+        self.set_entropy(labels)
 
     def set_major_feature(self, features, labels):
         IGs = calculator().calculate_information_gains(features, labels, self.entropy)
@@ -217,7 +224,8 @@ class DecisionTreeNode(TreeNode):
     def set_major_label(self, labels):
         self.major_label = mode(labels)
         
-        
+    def set_entropy(self, labels):
+        self.entropy = calculator().calculate_entropy(labels)
 
 
 
@@ -233,7 +241,7 @@ class DecisionTreeNode(TreeNode):
             else:
                 return self.right_child.get_a_prediction(feature)
 
-    def is_data_in_left_child(self, feature):
+    def is_data_in_left_child(self, feature):   ##### REFACTOR: change name
         if feature[0, self.major_feature['index']] > self.major_feature['median']:
             return True
         else:
@@ -245,60 +253,62 @@ class DecisionTreeNode(TreeNode):
 
 
 class PrunedDecisionTreeNode(DecisionTreeNode):
-    def __init__(self, depth=1, **hyper_parameters):
-        super().__init__(depth, **hyper_parameters)
-        # Post-prunning attributes (cost-complexity prunning)
-        self.hyper_parameters = hyper_parameters # max_leaf_impurity, max_samples_leaf, max_tree_depth, ccp_alpha
+    def __init__(self, hyper_parameters:Decision_Tree_Hyperparameters, depth=1):
+        super().__init__(hyper_parameters, depth)
+        self.hyper_parameters = hyper_parameters
         self.alpha_eff = np.nan
-        self.num_branch_leaves = 0
-        self.branch_entropy = 0
+        self.leaf_nodes_number = 0
+        self.leaf_nodes_entropy = 0
 
-    def build_and_prune_tree(self, dataset):
-        self.build_tree(dataset)
+    def build_tree(self, dataset):
+        super().build_tree(dataset)
         self.get_prunning()
 
     def get_prunning(self):
         # By cost complexity pruning,
         # ref: https://scikit-learn.org/stable/modules/tree.html#minimal-cost-complexity-pruning
-        self.set_branch_entropy()
-        self.set_alpha_eff(self.get_leaf_nodes_number())
-        while self.get_min_alpha_eff() < self.hyper_parameters['ccp_alpha']:
+        self.set_leaf_nodes_entropy()
+        self.set_alpha_eff(self.set_leaf_nodes_number())
+        while self.get_min_alpha_eff() < self.hyper_parameters.ccp_alpha:
             self.remove_weakest_branch(self.get_min_alpha_eff())
-            self.set_alpha_eff(self.get_leaf_nodes_number())
+            self.set_alpha_eff(self.set_leaf_nodes_number())
 
 
 
 
     def set_child_nodes(self):
-        self.left_child = PrunedDecisionTreeNode(self.depth+1, **self.hyper_parameters)
-        self.right_child = PrunedDecisionTreeNode(self.depth+1, **self.hyper_parameters)
+        self.left_child = PrunedDecisionTreeNode(self.hyper_parameters, self.depth+1)
+        self.right_child = PrunedDecisionTreeNode(self.hyper_parameters, self.depth+1)
         
-    def set_branch_leaf_nodes_number(self):
+    def set_leaf_nodes_entropy(self):
+        # TRAVERSE THE BRANCH and set it.
         if self.is_leaf():
-            self.num_branch_leaves = 1
-            return self.num_branch_leaves
+            self.leaf_nodes_entropy = self.entropy
+            return self.leaf_nodes_entropy
         else:
-            self.num_branch_leaves = 0
-            self.num_branch_leaves += self.left_child.set_branch_leaf_nodes_number()
-            self.num_branch_leaves += self.right_child.set_branch_leaf_nodes_number()
-            return self.num_branch_leaves
-        
-    def set_branch_entropy(self):
+            self.leaf_nodes_entropy += self.left_child.set_leaf_nodes_entropy()
+            self.leaf_nodes_entropy += self.right_child.set_leaf_nodes_entropy()
+            return self.leaf_nodes_entropy
+  
+    def set_leaf_nodes_number(self):
+        # TRAVERSE THE BRANCH and set it.
         if self.is_leaf():
-            self.branch_entropy = self.entropy
-            return self.branch_entropy
+            self.leaf_nodes_number = 1
+            return self.leaf_nodes_number
         else:
-            self.branch_entropy += self.left_child.set_branch_entropy()
-            self.branch_entropy += self.right_child.set_branch_entropy()
-            return self.branch_entropy
-
-    def set_alpha_eff(self, num_tree_leaves):
+            self.leaf_nodes_number = 0
+            self.leaf_nodes_number += self.left_child.set_leaf_nodes_number()
+            self.leaf_nodes_number += self.right_child.set_leaf_nodes_number()
+            return self.leaf_nodes_number
+    
+    def set_alpha_eff(self, leaf_nodes_number_of_root):
+        # TRAVERSE THE BRANCH and set it.
         if self.is_leaf():
             self.alpha_eff = np.nan
         else:
-            self.alpha_eff = (self.entropy - self.branch_entropy) / (num_tree_leaves - 1)
-            self.left_child.set_alpha_eff(num_tree_leaves)
-            self.right_child.set_alpha_eff(num_tree_leaves)
+            self.alpha_eff = (self.entropy - self.leaf_nodes_entropy) / (leaf_nodes_number_of_root - 1)
+            self.left_child.set_alpha_eff(leaf_nodes_number_of_root)
+            self.right_child.set_alpha_eff(leaf_nodes_number_of_root)
         
     def get_min_alpha_eff(self):
         if self.is_leaf():
@@ -309,13 +319,13 @@ class PrunedDecisionTreeNode(DecisionTreeNode):
     
     def remove_weakest_branch(self, min_alpha_eff):
         if self.is_leaf():
-            pass
-        if self.alpha_eff == min_alpha_eff:
-            self.remove_child_nodes()
-            
+            return
         else:
-            self.left_child.remove_weakest_branch(min_alpha_eff)
-            self.right_child.remove_weakest_branch(min_alpha_eff)
+            if self.alpha_eff == min_alpha_eff:
+                self.remove_child_nodes()
+            else:
+                self.left_child.remove_weakest_branch(min_alpha_eff)
+                self.right_child.remove_weakest_branch(min_alpha_eff)
             
         
     
@@ -359,7 +369,7 @@ if __name__ == '__main__':
     #######################
     # TEST pruned decision tree
     #######################
-    '''def test_build_and_prune_tree():
+    '''def test_build_tree():
         pdt = PrunedDecisionTreeNode(**{'max_leaf_impurity':0.2, # the maximum of entropy in each leaves
                                  'max_samples_leaf':2,   # the maximum required samples in each leaves
                                  'max_tree_depth':3,
@@ -368,6 +378,6 @@ if __name__ == '__main__':
         dataset.features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4],[5,5],[0,0],[1,1],[2,2],[3,3],[4,4],[5,5]])
         dataset.labels = np.array([1, -1, 1, -1, -1, -1,1, -1, 1, -1, -1, -1])
 
-        pdt.build_and_prune_tree(dataset)
-    test_build_and_prune_tree()'''
+        pdt.build_tree(dataset)
+    test_build_tree()'''
 

@@ -168,7 +168,6 @@ class Classifier:
                         epoch_number = None,
                         fold_quantity = None, 
                         fold_number = None):
-        #print(state, fold_quantity, fold_number, epoch_quantity, epoch_number)
         self.information.state = state if state != "Train/Test/Valid" else self.information.state
         self.information.fold_quantity = self.information.fold_quantity if fold_quantity is None else fold_quantity
         self.information.fold_number = self.information.fold_number if fold_number is None else fold_number
