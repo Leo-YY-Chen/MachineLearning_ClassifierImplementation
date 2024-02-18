@@ -1,122 +1,24 @@
-#import csv
-#import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split, KFold
-import pandas as pd
 import numpy as np
 import sys
 sys.path.append('..')
-import data.config as cfg
 from statistics import mode
 from calculator import Performance_Calculator as calculator
 from data_processor import Data_Processor as data_processor
 
-class Dataset:
-    def __init__(self, features = None, labels = None):
-        self.features = features    #2D array
-        self.labels = labels        #1D array
-        self.k_fold_indices = None
-
-    def load(self, datasest_path): ##### REFINE: this function depends on cfg files
-        self.features = pd.read_csv(datasest_path, usecols = cfg.feature_names)
-        self.labels = pd.read_csv(datasest_path, usecols = cfg.label_names)
-        
-    def preprocess(self):
-        self.relabel_into_minus_or_plus_one()
-        self.do_data_balancing()
-        self.do_min_max_normalization()
-        
-    def relabel_into_minus_or_plus_one(self):
-        self.labels[self.labels > 0] = 1
-        self.labels[self.labels <= 0] = -1
-        
-    def do_data_balancing(self):
-        self.do_oversampling()
-        
-    def do_oversampling(self):
-        labels, numbers = self.get_labels_and_numbers_of_oversamples()
-        self.clone_subset_randomly_by_labels_and_numbers(labels, numbers)
-        
-    def get_labels_and_numbers_of_oversamples(self):
-        lebels, counts = np.unique(self.labels, return_counts=True)
-        number_oversamples = np.max(counts) - counts
-        return lebels, number_oversamples
-    
-    def clone_subset_randomly_by_labels_and_numbers(self, labels, numbers):
-        for i, label in enumerate(labels):
-            indices = self.get_indices_of_oversamples_with_label(numbers[i], label)
-            self.clone_subset_by_indices(indices)
-        
-    def get_indices_of_oversamples_with_label(self, number_oversamples, label):
-        indices = self.get_indices_with_label(label)
-        indices_of_oversamples = np.random.choice(indices, number_oversamples)
-        all_indices = np.array(range(len(self.features)))
-        indices_of_oversamples = np.in1d(all_indices, indices_of_oversamples)
-        return indices_of_oversamples
-    
-    def clone_subset_by_indices(self, indices):
-        np.concatenate((self.features, self.features[indices]))
-        np.concatenate((self.labels, self.labels[indices]))
-        
-    def get_indices_with_label(self, label):
-        indices = np.where(self.labels == label)[0]
-        return indices.tolist()
-    
-    def do_min_max_normalization(self):
-        min = np.min(self.features, axis=0)
-        max = np.max(self.features, axis=0)
-        self.features = (self.features-min)/(max-min)
-        
-    def remove_unimportant_feature(self, feature_id_list): 
-        np.delete(self.features, feature_id_list, axis=1)
-        
-    def split_in_ratio(self, split_ratio=[0.8, 0.2]): 
-        train_set = Dataset()
-        test_set = Dataset()
-        train_set.features, test_set.features, train_set.labels, test_set.labels = train_test_split(self.features, self.labels, test_size = split_ratio[1], random_state=83)
-        train_set.squeeze()
-        test_set.squeeze()
-        return train_set, test_set
-    
-    def get_subset(self, indices):
-        dataset = Dataset()
-        dataset.features = self.features[indices]
-        dataset.labels = self.labels[indices]
-        return dataset
-   
-    def squeeze(self):
-        self.features = np.squeeze(self.features)
-        self.labels = np.squeeze(self.labels)
-        
-
-    def set_k_fold_indices(self, n_splits):
-        kf = KFold(n_splits=n_splits, random_state=83, shuffle=True)
-        self.k_fold_indices = [(train_index, valid_index) for (train_index, valid_index) in kf.split(self.features)]
-        
-
-    def get_kth_fold_datasets(self, kth = 0):
-        (train_index, valid_index) = self.k_fold_indices[kth]
-        train_dataset = self.get_subset(train_index)
-        valid_dataset = self.get_subset(valid_index)
-        return train_dataset, valid_dataset
-
-    def split_in_ratio_for_k_fold(self, n_splits):
-        temp_dataset, test_dataset = self.split_in_ratio()
-        temp_dataset.set_k_fold_indices(n_splits)
-        return temp_dataset, test_dataset
-
-
-
 
 
 class Decision_Tree_Hyperparameters:
-    def __init__(self):
-        self.max_leaf_impurity = None   # The maximum of entropy in each leaf node
-        self.max_samples_leaf = None    # The maximum required samples in each leaf node
-        self.max_tree_depth = None      # The maximum of depth of the tree
+    def __init__(self, max_leaf_impurity = None, max_samples_leaf = None, max_tree_depth = None ,ccp_alpha = None):
+        self.max_leaf_impurity = max_leaf_impurity  # The maximum of entropy in each leaf node
+        self.max_samples_leaf = max_samples_leaf    # The maximum required samples in each leaf node
+        self.max_tree_depth = max_tree_depth        # The maximum of depth of the tree
 
         # To do cost complexity pruning,
         # ref: https://scikit-learn.org/stable/modules/tree.html#minimal-cost-complexity-pruning
-        self.ccp_alpha = None           # Pruning stops when the pruned tree’s minimal alpha_eff is greater than the ccp_alpha parameter.
+        self.ccp_alpha = ccp_alpha  # Pruning stops when the pruned tree’s minimal alpha_eff is greater than the ccp_alpha parameter.
+
+
+
 
 
 
@@ -172,9 +74,6 @@ class TreeNode:
     def show_the_branch(self): 
         pass
 
-    
-    
-
 
 class DecisionTreeNode(TreeNode):
     def __init__(self, hyper_parameters:Decision_Tree_Hyperparameters, depth = 1):
@@ -184,13 +83,13 @@ class DecisionTreeNode(TreeNode):
         self.major_label = np.nan
         self.entropy = 0
 
-    def build_tree(self, dataset):  ##### REFACTOR: ugly get_dataset approach
-        self.set_attributes(dataset.features, dataset.labels)
-        if self.is_building_finished(dataset.labels):
+    def build_tree(self, features, labels):  ##### REFACTOR: (1)ugly get_dataset approach (2) reduce is_building_finished() arg
+        self.set_attributes(features, labels)
+        if self.is_building_finished(labels):
             return
         self.set_child_nodes()      
-        self.left_child.build_tree(data_processor().get_dataset_bigger_than_median(dataset, self.major_feature['index']))
-        self.right_child.build_tree(data_processor().get_dataset_not_bigger_than_median(dataset, self.major_feature['index']))
+        self.left_child.build_tree(*data_processor().get_data_bigger_than_median(features, labels, self.major_feature['index']))
+        self.right_child.build_tree(*data_processor().get_data_not_bigger_than_median(features, labels, self.major_feature['index']))
 
     def is_building_finished(self, labels):
         if len(labels) == 1:
@@ -216,15 +115,15 @@ class DecisionTreeNode(TreeNode):
         self.set_major_label(labels)
         self.set_entropy(labels)
 
-    def set_major_feature(self, features, labels):
-        IGs = calculator().calculate_information_gains(features, labels, self.entropy)
+    def set_major_feature(self, features, labels):##### REFACTOR: try to remove dependency on calculator()
+        IGs = calculator().calculate_information_gains(features, labels, self.entropy)  
         self.major_feature['index'] = np.argmax(IGs)
         self.major_feature['median'] = np.median(features, axis=0)[np.argmax(IGs)]
         
     def set_major_label(self, labels):
         self.major_label = mode(labels)
         
-    def set_entropy(self, labels):
+    def set_entropy(self, labels):##### REFACTOR: try to remove dependency on calculator()
         self.entropy = calculator().calculate_entropy(labels)
 
 
@@ -242,15 +141,11 @@ class DecisionTreeNode(TreeNode):
                 return self.right_child.get_a_prediction(feature)
 
     def is_data_in_left_child(self, feature):   ##### REFACTOR: change name
-        if feature[0, self.major_feature['index']] > self.major_feature['median']:
+        if feature[self.major_feature['index']] > self.major_feature['median']:
             return True
         else:
             return False
         
-
-
-
-
 
 class PrunedDecisionTreeNode(DecisionTreeNode):
     def __init__(self, hyper_parameters:Decision_Tree_Hyperparameters, depth=1):
@@ -260,8 +155,8 @@ class PrunedDecisionTreeNode(DecisionTreeNode):
         self.leaf_nodes_number = 0
         self.leaf_nodes_entropy = 0
 
-    def build_tree(self, dataset):
-        super().build_tree(dataset)
+    def build_tree(self, features, labels):
+        super().build_tree(features, labels)
         self.get_prunning()
 
     def get_prunning(self):
@@ -335,28 +230,15 @@ class PrunedDecisionTreeNode(DecisionTreeNode):
 
 if __name__ == '__main__':
     #######################
-    # TEST decision tree
+    # TEST TreeNode
     #######################
-    '''def test_build_tree():
-        dt = DecisionTreeNode(**{'max_leaf_impurity':0.2, # the maximum of entropy in each leaves
-                                 'max_samples_leaf':2,   # the maximum required samples in each leaves
-                                 'max_tree_depth':2})
-        dataset = Dataset()
-        dataset.features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4],[5,5]])
-        dataset.labels = np.array([1, -1, 1, -1, -1, -1])
+    '''def test_get_leaf_nodes_number():
+        hyperparameters = Decision_Tree_Hyperparameters(0.2, 2, 2)
+        dt = DecisionTreeNode(hyperparameters)
+        features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4],[5,5]])
+        labels = np.array([1, -1, 1, -1, -1, -1])
 
-        dt.build_tree(dataset)
-    test_build_tree()
-
-    def test_get_leaf_nodes_number():
-        dt = DecisionTreeNode(**{'max_leaf_impurity':0.2, # the maximum of entropy in each leaves
-                                 'max_samples_leaf':2,   # the maximum required samples in each leaves
-                                 'max_tree_depth':2})
-        dataset = Dataset()
-        dataset.features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4],[5,5]])
-        dataset.labels = np.array([1, -1, 1, -1, -1, -1])
-
-        dt.build_tree(dataset)
+        dt.build_tree(features, labels)
         if dt.get_leaf_nodes_number() == 2:
             print("passing")
         else:
@@ -366,18 +248,33 @@ if __name__ == '__main__':
 
 
 
+
     #######################
-    # TEST pruned decision tree
+    # TEST DecisionTreeNode
+    #######################
+    def test_build_tree():
+        hyperparameters = Decision_Tree_Hyperparameters(0.2, 2, 2)
+        dt = DecisionTreeNode(hyperparameters)
+        features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4],[5,5]])
+        labels = np.array([1, -1, 1, -1, -1, -1])
+
+        dt.build_tree(features, labels)
+    test_build_tree()
+
+    
+
+
+
+
+    #######################
+    # TEST PrunedDecisionTreeNode
     #######################
     '''def test_build_tree():
-        pdt = PrunedDecisionTreeNode(**{'max_leaf_impurity':0.2, # the maximum of entropy in each leaves
-                                 'max_samples_leaf':2,   # the maximum required samples in each leaves
-                                 'max_tree_depth':3,
-                                 'ccp_alpha':0.1})
-        dataset = Dataset()
-        dataset.features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4],[5,5],[0,0],[1,1],[2,2],[3,3],[4,4],[5,5]])
-        dataset.labels = np.array([1, -1, 1, -1, -1, -1,1, -1, 1, -1, -1, -1])
+        hyperparameters = Decision_Tree_Hyperparameters(0.2, 2, 3, 0.1)
+        pdt = PrunedDecisionTreeNode(hyperparameters)
+        features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4],[5,5],[0,0],[1,1],[2,2],[3,3],[4,4],[5,5]])
+        labels = np.array([1, -1, 1, -1, -1, -1,1, -1, 1, -1, -1, -1])
 
-        pdt.build_tree(dataset)
+        pdt.build_tree(features, labels)
     test_build_tree()'''
 

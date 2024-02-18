@@ -5,7 +5,8 @@ import calculator
 import presenter
 from model.knn_classifier import KNNClassifier
 from model.linear_classifier import LinearClassifier
-
+from model.naive_decision_tree_classifer import DTClassifier
+from model.pruned_decision_tree_classifer import PDTClassifier
 
 
 
@@ -287,3 +288,103 @@ test_test()'''
     train_labels = np.array([1, -1, 1, -1, 1, -1])
     lc.k_fold_cross_validation(train_features, train_labels, test_features, test_labels, data_processor.Data_Processor())
 test_k_fold_cross_validation()'''
+
+
+
+
+#######################
+# TEST DTClassifier
+#######################
+'''def test_update_parameters():
+    dt = DTClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Iterative_Performance_Presenter())
+    features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4],[5,5]])
+    labels = np.array([1, -1, 1, -1, -1, -1])
+
+    dt.update_parameters(features, labels)
+test_update_parameters()'''
+
+
+##### Test: how dt grows?
+'''def test_get_predictions():  
+    dt = DTClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Iterative_Performance_Presenter())
+    features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4]])
+    labels = np.array([1, -1, 1, -1, -1])
+
+    dt.update_parameters(features, labels)
+    print(dt.get_predictions(features, labels))
+    if (dt.get_predictions(features, labels) == labels).all():
+        print("passing")
+    else:
+        print("fail")
+test_get_predictions()'''
+
+
+
+'''def test_load_classifier():
+    dt = DTClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Iterative_Performance_Presenter())
+    features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4],[5,5]])
+    labels = np.array([1, -1, 1, -1, -1, -1])
+    dt.train(features, labels)
+
+    dt1 = DTClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Iterative_Performance_Presenter())
+    dt1.load_classifier(dt.get_file_name())
+    dt1.test(features, labels)
+test_load_classifier()'''
+
+
+
+'''def test_test():
+    dt = DTClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Iterative_Performance_Presenter())
+    features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4]])
+    labels = np.array([1, -1, 1, -1, -1])
+
+    dt.update_parameters(features, labels)
+    dt.test(features, labels)
+test_test()
+
+
+def test_k_fold_cross_validation():
+    dt = DTClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Iterative_Performance_Presenter())
+    test_features = np.array([[0,0],[1,1],[2,2]])
+    test_labels = np.array([1, -1, 1])
+    train_features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4],[5,5]])
+    train_labels = np.array([1, -1, 1, -1, 1, -1])
+    dt.k_fold_cross_validation(train_features, train_labels, test_features, test_labels, data_processor.Data_Processor())
+test_k_fold_cross_validation()'''
+
+
+
+
+
+#######################
+# TEST DTClassifier
+#######################
+'''def test_update_parameters():
+    pdt = PDTClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Iterative_Performance_Presenter())
+    features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4],[5,5]])
+    labels = np.array([1, -1, 1, -1, -1, -1])
+
+    pdt.update_parameters(features, labels)
+test_update_parameters()
+
+
+
+def test_load_classifier():
+    pdt = PDTClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Iterative_Performance_Presenter())
+    features = np.array([[0,0],[1,1],[2,2],[3,3],[4,4],[5,5]])
+    labels = np.array([1, -1, 1, -1, -1, -1])
+    pdt.train(features, labels)
+
+    pdt1 = PDTClassifier(calculator = calculator.Performance_Calculator(), 
+                        presenter = presenter.Iterative_Performance_Presenter())
+    pdt1.load_classifier(pdt.get_file_name())
+    pdt1.test(features, labels)
+test_load_classifier()'''

@@ -11,29 +11,36 @@ class Data_Processor(classifier.Data_Processor_Interface):
     def __init__(self):
         pass
         
-    def load(self, filepath):
-        return None
+    def load_csv(self, filepath, feature_names, label_names):
+        # Assume that   (train_, test_)features:    2D array (feature_instance, feature_type)
+        #               (train_, test_)labels:      1D array (label)
+        features = pd.read_csv(filepath, usecols = feature_names).to_numpy()
+        labels = pd.read_csv(filepath, usecols = label_names).to_numpy()
+        return features, np.squeeze(labels)
     
     def preprocess(self, features, labels):
-        return None
+        labels = self.relabel_into_minus_or_plus_one(labels)
+        features = self.do_min_max_normalization(features)
+        #self.do_data_balancing()
+        return features, labels
+    
     
 
 
 
     def relabel_into_minus_or_plus_one(self, labels):
-        return None
-
-    def do_data_balancing(self, features, labels):
-        return None
+        labels[labels > 0] = 1
+        labels[labels <= 0] = -1
+        return labels
     
-    '''def get_k_fold_data(self, folds_number, features, labels):
-        # if is_folds_number_valid() and are_features_labels_size_valid():
-        result = []
-        for i in range(folds_number):
-            train = self.remove_ith_fold_data(folds_number, i, features, labels)
-            test = self.get_ith_fold_data(folds_number, i, features, labels)
-            result.append((train, test))
-        return result'''
+    def do_min_max_normalization(self, features):
+        min = np.min(features, axis=0)
+        max = np.max(features, axis=0)
+        return (features-min)/(max-min)
+
+     
+    
+    
 
 
 
@@ -60,30 +67,16 @@ class Data_Processor(classifier.Data_Processor_Interface):
 
 
 
-
-    '''def get_datasets_for_children(self, dataset, major_feature_index):
-        left_indices, right_indices = self.get_indices_by_major_feature(dataset.features, major_feature_index)
-        left_dataset = dataset.get_subset(left_indices)
-        right_dataset = dataset.get_subset(right_indices)
-        return left_dataset, right_dataset
     
-    def get_indices_by_major_feature(self, features, major_feature_index):
+    def get_data_bigger_than_median(self, features, labels, major_feature_index):
         median = np.median(features, axis=0)[major_feature_index]
         left_indices = features[:, major_feature_index] > median
+        return features[left_indices, :], labels[left_indices]
+    
+    def get_data_not_bigger_than_median(self, features, labels, major_feature_index):
+        median = np.median(features, axis=0)[major_feature_index]
         right_indices = features[:, major_feature_index] <= median
-        return left_indices, right_indices'''
-    
-    def get_dataset_bigger_than_median(self, dataset, major_feature_index):
-        median = np.median(dataset.features, axis=0)[major_feature_index]
-        left_indices = dataset.features[:, major_feature_index] > median
-        left_dataset = dataset.get_subset(left_indices)
-        return left_dataset
-    
-    def get_dataset_not_bigger_than_median(self, dataset, major_feature_index):
-        median = np.median(dataset.features, axis=0)[major_feature_index]
-        right_indices = dataset.features[:, major_feature_index] <= median
-        right_dataset = dataset.get_subset(right_indices)
-        return right_dataset
+        return features[right_indices, :], labels[right_indices]
     
 
 

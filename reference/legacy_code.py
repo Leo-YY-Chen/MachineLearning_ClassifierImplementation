@@ -7,6 +7,110 @@ import data.config as cfg
 import os
 import pickle
 
+class Dataset:
+    def __init__(self, features = None, labels = None):
+        self.features = features    #2D array
+        self.labels = labels        #1D array
+        self.k_fold_indices = None
+
+    def load(self, datasest_path): ##### REFINE: this function depends on cfg files
+        self.features = pd.read_csv(datasest_path, usecols = cfg.feature_names)
+        self.labels = pd.read_csv(datasest_path, usecols = cfg.label_names)
+        
+    def preprocess(self):
+        self.relabel_into_minus_or_plus_one()
+        self.do_data_balancing()
+        self.do_min_max_normalization()
+        
+    def relabel_into_minus_or_plus_one(self):
+        self.labels[self.labels > 0] = 1
+        self.labels[self.labels <= 0] = -1
+        
+    def do_data_balancing(self):
+        self.do_oversampling()
+        
+    def do_oversampling(self):
+        labels, numbers = self.get_labels_and_numbers_of_oversamples()
+        self.clone_subset_randomly_by_labels_and_numbers(labels, numbers)
+        
+    def get_labels_and_numbers_of_oversamples(self):
+        lebels, counts = np.unique(self.labels, return_counts=True)
+        number_oversamples = np.max(counts) - counts
+        return lebels, number_oversamples
+    
+    def clone_subset_randomly_by_labels_and_numbers(self, labels, numbers):
+        for i, label in enumerate(labels):
+            indices = self.get_indices_of_oversamples_with_label(numbers[i], label)
+            self.clone_subset_by_indices(indices)
+        
+    def get_indices_of_oversamples_with_label(self, number_oversamples, label):
+        indices = self.get_indices_with_label(label)
+        indices_of_oversamples = np.random.choice(indices, number_oversamples)
+        all_indices = np.array(range(len(self.features)))
+        indices_of_oversamples = np.in1d(all_indices, indices_of_oversamples)
+        return indices_of_oversamples
+    
+    def clone_subset_by_indices(self, indices):
+        np.concatenate((self.features, self.features[indices]))
+        np.concatenate((self.labels, self.labels[indices]))
+        
+    def get_indices_with_label(self, label):
+        indices = np.where(self.labels == label)[0]
+        return indices.tolist()
+    
+    def do_min_max_normalization(self):
+        min = np.min(self.features, axis=0)
+        max = np.max(self.features, axis=0)
+        self.features = (self.features-min)/(max-min)
+        
+    def remove_unimportant_feature(self, feature_id_list): 
+        np.delete(self.features, feature_id_list, axis=1)
+        
+    def split_in_ratio(self, split_ratio=[0.8, 0.2]): 
+        train_set = Dataset()
+        test_set = Dataset()
+        train_set.features, test_set.features, train_set.labels, test_set.labels = train_test_split(self.features, self.labels, test_size = split_ratio[1], random_state=83)
+        train_set.squeeze()
+        test_set.squeeze()
+        return train_set, test_set
+    
+    def get_subset(self, indices):
+        dataset = Dataset()
+        dataset.features = self.features[indices]
+        dataset.labels = self.labels[indices]
+        return dataset
+   
+    def squeeze(self):
+        self.features = np.squeeze(self.features)
+        self.labels = np.squeeze(self.labels)
+        
+
+    def set_k_fold_indices(self, n_splits):
+        kf = KFold(n_splits=n_splits, random_state=83, shuffle=True)
+        self.k_fold_indices = [(train_index, valid_index) for (train_index, valid_index) in kf.split(self.features)]
+        
+
+    def get_kth_fold_datasets(self, kth = 0):
+        (train_index, valid_index) = self.k_fold_indices[kth]
+        train_dataset = self.get_subset(train_index)
+        valid_dataset = self.get_subset(valid_index)
+        return train_dataset, valid_dataset
+
+    def split_in_ratio_for_k_fold(self, n_splits):
+        temp_dataset, test_dataset = self.split_in_ratio()
+        temp_dataset.set_k_fold_indices(n_splits)
+        return temp_dataset, test_dataset
+
+
+def get_k_fold_data(self, folds_number, features, labels):
+        # if is_folds_number_valid() and are_features_labels_size_valid():
+        result = []
+        for i in range(folds_number):
+            train = self.remove_ith_fold_data(folds_number, i, features, labels)
+            test = self.get_ith_fold_data(folds_number, i, features, labels)
+            result.append((train, test))
+        return result
+
 class Classifier:
     def __init__(self):
         self.hyper_parameters = None
@@ -393,3 +497,24 @@ if __name__ == "__main__":
 
 
     
+'''def save_dict(filename, dict):
+    with open(filename, "w", newline="") as fp:
+        writer = csv.DictWriter(fp, fieldnames=dict.keys())
+        writer.writeheader()
+        writer.writerow(dict)
+
+def save_plot(filename, train_list, valid_list, plotname='accuracy'):
+    fig, ax = plt.subplots(figsize=(8,4))
+    plt.title(plotname)
+    plt.plot(train_list, label='train '+plotname)
+    plt.plot(valid_list, label='valid '+plotname, linestyle='--')
+    plt.legend()
+    plt.savefig(filename)
+    plt.show()
+
+def save_bar_chart(filename, label_list, data_list, plotname='Feature Importance'):
+    plt.title(plotname)
+    plt.bar(label_list, data_list)
+    plt.xticks(rotation=30, ha='right')
+    plt.savefig(filename)
+    plt.show()'''

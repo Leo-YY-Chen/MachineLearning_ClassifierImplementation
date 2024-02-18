@@ -7,6 +7,25 @@ from typing import Callable, Sequence, Iterable, Any, Tuple, Union
 
 
 
+class Hyperparameters:
+    def __init__(self, 
+                 type = "DecisionTree_Clustering_NeuralNetwork_etc",
+                 timestamp = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                 state = "Train/Test/Valid", 
+                 fold_quantity = None, 
+                 fold_number = None, 
+                 epoch_quantity = None,
+                 epoch_number = None,
+                 loss_type = None):
+        self.type = type
+        self.timestamp = timestamp
+        self.state = state
+        self.fold_quantity = fold_quantity
+        self.fold_number = fold_number
+        self.epoch_quantity = epoch_quantity
+        self.epoch_number = epoch_number
+        self.loss_type = loss_type
+
 
 
 class Metrics:
@@ -188,6 +207,8 @@ class Classifier:
         return f'{self.information.type}_{self.information.timestamp}_Fold{self.information.fold_number}'
 
     
+
+
     
 
 

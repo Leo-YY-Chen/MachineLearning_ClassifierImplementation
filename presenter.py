@@ -3,9 +3,6 @@ import matplotlib.pyplot as plt
 import os
 import classifier
 import model.utils
-import sys
-sys.path.append('..')
-import data.config as cfg
 
 
 
@@ -149,10 +146,9 @@ class Feature_Importance_Presenter:
     def __init__(self) -> None:
         pass
 
-    '''def set_show_and_save_feature_importance(self, train_data, number_repetition=10): ##### refine: depend on cfg, too many lines
-        self.set_features_importance(train_data, number_repetition)
+    def set_show_and_save_feature_importance(self, train_data, feature_names,  number_repetition=10): ##### refine: depend on cfg, too many lines
         filepath = os.path.join(cfg.absolute_ML_HW1_path, f'results\plots', f'feature_importance_{self.filename}')
-        utils.save_bar_chart(filepath, cfg.feature_names, self.features_importance) 
+        utils.save_bar_chart(filepath, feature_names, self.features_importance) 
         message = self.get_feature_importance_message()
         self.show_message(message)
         self.save_message(message)
@@ -162,13 +158,21 @@ class Feature_Importance_Presenter:
         message = f""
         for i in range(len(self.features_importance)):
             message = message + f"{cfg.feature_names[i] + ': ':<25}{self.features_importance[i]:.3f} \n"
-        return message'''
+        return message
 
 
 
 
 
 class Tree_Presenter:
+    def __init__(self):
+        pass
+
+    def show_the_branch(self) -> None:
+        pass
+
+
+'''class Decision_Tree_Presenter(Tree_Presenter):
     def __init__(self, treenode:model.utils.TreeNode):
         self.treenode = treenode
 
@@ -190,7 +194,7 @@ class Tree_Presenter:
             print(f"|   ", end ='')
         print(f"|---", end='')
       
-
+'''
 
 
 
