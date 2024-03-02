@@ -127,23 +127,23 @@ class Classifier:
 
     def k_fold_cross_validation(self, train_features, train_labels, test_features, test_labels, data_processor:Data_Processor_Interface, k = 3):
         for i in range(k):
-            self.set_information(fold_quantity=k, fold_number=i)
+            self._set_information(fold_quantity=k, fold_number=i)
             self.train(*data_processor.remove_ith_fold_data(k, i, train_features, train_labels))
             self.valid(*data_processor.get_ith_fold_data(k, i, train_features, train_labels))
         self.test(test_features, test_labels)
 
     def train(self, features, labels):
-        self.set_information("Train")
+        self._set_information("Train")
         self.update_parameters(features, labels)
         self.get_performance(features, labels)
         self.save_classifier()
     
     def test(self, features, labels):
-        self.set_information("Test")
+        self._set_information("Test")
         self.get_performance(features, labels) 
         
     def valid(self, features, labels):
-        self.set_information("Valid")
+        self._set_information("Valid")
         self.get_performance(features, labels) 
     
 
@@ -157,32 +157,34 @@ class Classifier:
         pass 
 
     def get_performance(self, features, labels):
-        self.set_metrics(labels, self.get_predictions(features))
-        self.show_performance()
-        self.save_performance()
-        
-    
+        self._set_metrics(labels, self.get_predictions(features))
+        self._show_performance()
+        self._save_performance()
 
 
 
-    def set_metrics(self, labels, predictions):
-        self.metrics = self.calculator.calculate_metrics(labels, predictions)
-        
-    def show_performance(self):
-        self.presenter.show_performance(self.information, self.metrics)
-    
-    def save_performance(self):
-        self.presenter.save_performance(self.information, self.metrics)
-    
+
     def save_classifier(self):
         with open(self.get_file_name(), 'wb') as fp:
             pickle.dump(self.attributes, fp)
     
     def load_classifier(self, pkl_file_name):
         with open(pkl_file_name, 'rb') as fp:
-            self.attributes = pickle.load(fp)
+            self.attributes = pickle.load(fp)        
+    
 
-    def set_information(self, state = "Train/Test/Valid", 
+
+
+    def _set_metrics(self, labels, predictions):
+        self.metrics = self.calculator.calculate_metrics(labels, predictions)
+        
+    def _show_performance(self):
+        self.presenter.show_performance(self.information, self.metrics)
+    
+    def _save_performance(self):
+        self.presenter.save_performance(self.information, self.metrics)
+
+    def _set_information(self, state = "Train/Test/Valid", 
                         epoch_quantity = None,
                         epoch_number = None,
                         fold_quantity = None, 
@@ -201,9 +203,9 @@ class Classifier:
 
 
     def get_file_name(self):
-        return os.path.join(os.getcwd(), 'model/checkpoint', self.get_file_infomation()) + '.pkl'
+        return os.path.join(os.getcwd(), 'model/checkpoint', self._get_file_infomation()) + '.pkl'
     
-    def get_file_infomation(self):
+    def _get_file_infomation(self):
         return f'{self.information.type}_{self.information.timestamp}_Fold{self.information.fold_number}'
 
     
@@ -215,22 +217,23 @@ class Classifier:
 
 
 if __name__ == "__main__":
-    #######################
-    # TEST get_file_name and save & load classifier
-    #######################
-    '''def test_save_and_load_classifier():
-        clf = Classifier()
-        clf.attributes = {'hyper_parameters':{'k': 10, 'lr': 0.001}, 'parameters':{'weight':list(range(7)) ,'bias':np.array(range(7))}}
-        filename = clf.get_file_name()
-        clf.save_classifier()
 
-        clf.attributes = {'hyper_parameters':{}, 'parameters':{}}
-        if len(clf.attributes['hyper_parameters']) == 0 and len(clf.attributes['parameters']) == 0:
-            clf.load_classifier(filename)
-            if (clf.attributes['hyper_parameters'] == {'k': 10, 'lr': 0.001}) and (clf.attributes['parameters']['weight'] == list(range(7))) and (clf.attributes['parameters']['bias']==np.array(range(7))).all():
-                print("passing")
-            else:
-                print("loading fail")
-        else:
-            print("saving fail")
-    test_save_and_load_classifier()'''
+    import unittest
+
+    class TestClassifer(unittest.TestCase):
+
+        def test_load_classifier(self):
+            clf = Classifier(Calculator_Interface, Presenter_Interface)
+            clf.attributes = {'hyper_parameters':{'k': 10, 'lr': 0.001}, 
+                              'parameters':{'weight':list(range(7)),
+                                            'bias':np.array(range(7))}}
+            clf.save_classifier()
+
+            loaded_clf = Classifier(Calculator_Interface, Presenter_Interface)
+            loaded_clf.load_classifier(clf.get_file_name())
+
+            self.assertDictEqual(loaded_clf.attributes['hyper_parameters'], {'k': 10, 'lr': 0.001})
+            self.assertListEqual(loaded_clf.attributes['parameters']['weight'], list(range(7)))
+            self.assertTrue((loaded_clf.attributes['parameters']['bias'] == np.array(range(7))).all())
+
+    unittest.main()

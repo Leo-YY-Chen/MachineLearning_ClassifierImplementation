@@ -24,6 +24,15 @@ class KNNClassifier(Classifier):
 
 
 
+
+
+
+
+
+
+
+
+
     def predict_a_label(self, a_feature):
         for i in range(len(self.attributes['parameters']['train_labels'])):      
             if (a_feature == self.attributes['parameters']['train_features'][i, :]).all():
@@ -33,6 +42,8 @@ class KNNClassifier(Classifier):
         indices = self.get_neighbors_indices(distances)
         label = self.get_major_label_of_neighbors(indices)
         return label
+    
+
     
     def calcualte_distances(self, the_feature):
         features = self.attributes['parameters']['train_features']

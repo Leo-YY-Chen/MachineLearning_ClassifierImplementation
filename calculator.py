@@ -152,98 +152,83 @@ class Feature_Importance_Calculator:
 
     def shuffle_ith_feature_column(self, ith, features):
         features_copy = features.copy()
-        np.random.shuffle(features_copy[:, ith])
+        while not self._is_shuffled(features, features_copy):
+            np.random.shuffle(features_copy[:, ith])
         return features_copy
     
     def calculate_accuracy(self, labels, predictions):
         return np.sum(predictions == labels) / len(labels)
 
 
-
+    def _is_shuffled(self, features, shuffled_features):
+        return (features != shuffled_features).any()
 
 
 
 
 
 if __name__ == "__main__":
-    #######################
-    # TEST feature importance
-    #######################
-    '''def test_shuffle_ith_feature_column():
-        fic = Feature_Importance_Calculator()
-        origin = np.array(np.resize(range(10*7), (10,7)))
-        result = fic.shuffle_ith_feature_column(6, origin)
-        #print(origin,result)
-        if (result[:,0:5] == origin[:,0:5]).all() and (result[:,6] != origin[:,6]).any():
-            print("passing")
-        else:
-            print("fail")
-    test_shuffle_ith_feature_column()
-'''
+    import unittest
+
+    class Test_Calculator(unittest.TestCase):
+
+        def setUp(self) -> None:
+            self.calculator = Calculator()
+
+        def test_calculate_entropy(self):
+            entropy = self.calculator.calculate_entropy(np.array([1,1,-1,-1]))
+            self.assertEqual(entropy, np.log(2))
+
+        def tearDown(self):
+            del self.calculator
 
 
 
 
-    #######################
-    # TEST performance
-    #######################
-    '''def test_take_linear_function():
-        calculator = Performance_Calculator()
-        features = np.array([[1,2],[3,4],[5,6],[0,1]])
-        weights = np.array([1,-1,3])
+    class Test_Performance_Calculator(unittest.TestCase):
 
-        XW = calculator.take_linear_function(features, weights)
-        if (XW == np.array([2,2,2,2])).all():
-            print("passing")
-        else:
-            print("fail")
-    test_take_linear_function()
+        def setUp(self) -> None:
+            self.calculator = Performance_Calculator()
 
-    def test_calculate_L1_gradient():
-        calculator = Performance_Calculator()
-        labels = np.array([1,1,1,1])
-        features = np.array([[1,-2],[-3,4],[5,-6],[0,1]])
-        weights = np.array([-1,1,0])
-        gradient = calculator.calculate_L1_gradient(labels, features, weights)
-        if (gradient == np.array([-9,12,-1])/4).all():
-            print("passing")
-        else:
-            print("fail")
-    test_calculate_L1_gradient()
+        def test_take_linear_function(self):
+            features = np.array([[1,2],[3,4],[5,6],[0,1]])
+            weights = np.array([1,-1,3])
+            XW = self.calculator.take_linear_function(features, weights)
+            self.assertTrue((XW == np.array([2,2,2,2])).all())
 
-    def test_calculate_L1_loss():
-        calculator = Performance_Calculator()
-        labels = np.array([1,1,1,1])
-        features = np.array([[1,-2],[-3,4],[5,-6],[0,1]])
-        weights = np.array([-1,1,0])
-        loss = calculator.calculate_L1_loss(features, weights, labels)
-        if (loss == 5.5):
-            print("passing")
-        else:
-            print("fail")
-    test_calculate_L1_loss()'''
+        def test_calculate_L1_gradient(self):
+            labels = np.array([1,1,1,1])
+            features = np.array([[1,-2],[-3,4],[5,-6],[0,1]])
+            weights = np.array([-1,1,0])
+            gradient = self.calculator.calculate_L1_gradient(labels, features, weights)
+            self.assertTrue((gradient == np.array([-9,12,-1])/4).all())
+
+        def test_calculate_L1_loss(self):
+            labels = np.array([1,1,1,1])
+            features = np.array([[1,-2],[-3,4],[5,-6],[0,1]])
+            weights = np.array([-1,1,0])
+            loss = self.calculator.calculate_L1_loss(features, weights, labels)
+            self.assertEqual(loss, 5.5)
+        
+        def tearDown(self):
+            del self.calculator
 
 
 
-    #######################
-    # TEST syntax
-    #######################
-    '''def test_calculate_entropy():
-        calculator = Calculator()
-        if calculator.calculate_entropy(np.array([1,1,-1,-1]))==np.log(2):
-            print("passing")
-        else:
-            print("fail")
-    test_calculate_entropy()'''
 
 
+    class Test_Feature_Importance_Calculator(unittest.TestCase):
 
-    #######################
-    # TEST syntax
-    #######################
-    '''def test_len_of_1Darray():
-        if len(np.array([1,1,1,1]))==4:
-            print("passing")
-        else:
-            print("fail")
-    test_len_of_1Darray()'''
+        def setUp(self) -> None:
+            self.calculator = Feature_Importance_Calculator()
+
+        def test_shuffle_ith_feature_column(self):
+            origin = np.array(np.resize(range(2*7), (2,7)))
+            result = self.calculator.shuffle_ith_feature_column(6, origin)
+            self.assertTrue((result[:,0:5] == origin[:,0:5]).all())
+            self.assertTrue((result[:,6] != origin[:,6]).any())
+        
+        def tearDown(self):
+            del self.calculator
+
+    unittest.main()

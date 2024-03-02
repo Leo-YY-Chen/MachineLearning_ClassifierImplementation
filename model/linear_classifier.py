@@ -36,6 +36,10 @@ class LinearClassifier(Classifier):
 
     
     
+
+
+
+    
     def update_parameters(self, features, labels):
         self.check_weights(features) 
         gradient = self.calculator.calculate_gradient(labels, features, self.attributes['parameters']['w'], "L1")

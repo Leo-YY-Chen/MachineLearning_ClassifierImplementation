@@ -62,6 +62,9 @@ class Performance_Presenter(classifier.Presenter_Interface):
         accuracy_message = "" if self.metrics.accuracy == None else f"accuracy = {self.metrics.accuracy:.3f}    "
         loss_message = "" if self.metrics.loss == None else f"loss = {self.metrics.loss:.3f}    "
         return accuracy_message + loss_message
+    
+    def get_log_path(self):
+        return os.path.join(os.getcwd(), 'results\log', self.information.type) +'.txt'
 
 
     
@@ -142,7 +145,7 @@ class Iterative_Performance_Presenter(Performance_Presenter):
 
 
 
-class Feature_Importance_Presenter:
+'''class Feature_Importance_Presenter:
     def __init__(self) -> None:
         pass
 
@@ -160,17 +163,17 @@ class Feature_Importance_Presenter:
             message = message + f"{cfg.feature_names[i] + ': ':<25}{self.features_importance[i]:.3f} \n"
         return message
 
+'''
 
 
 
-
-class Tree_Presenter:
+'''class Tree_Presenter:
     def __init__(self):
         pass
 
     def show_the_branch(self) -> None:
         pass
-
+'''
 
 '''class Decision_Tree_Presenter(Tree_Presenter):
     def __init__(self, treenode:model.utils.TreeNode):
@@ -200,61 +203,59 @@ class Tree_Presenter:
 
 
 if __name__ == "__main__":
-    #######################
-    # TEST message
-    #######################
-    '''def test_get_state_message():
-        clf = Performance_Presenter()
-        message = clf.get_state_message("Train", 1, "number")
-        if message == "Train Fold 1 Epoch number: accuracy = nan, loss = nan":
-            print("passing")
-        else:
-            print("fail")
-    test_get_state_message()'''
+    import unittest
+
+    class Test_Performance_Presenter(unittest.TestCase):
+
+        def setUp(self) -> None:
+            self.presenter = Performance_Presenter()
+            self.presenter.information.type="TESTING"
+            self.presenter.information.epoch_quantity = 1000
+            self.presenter.information.epoch_number = 666
+            self.presenter.information.fold_number = 0
+            self.presenter.metrics.accuracy = 100
+            self.presenter.metrics.loss = None
 
 
 
 
-    '''def test_is_classifier_name_existing():
-        info = classifier.Information(type="TESTING")
-        mtcs = classifier.Metrics()
-        psntr = Performance_Presenter(info, mtcs)
+        def test_is_classifier_name_existing(self):
+            self.assertFalse(self.presenter.is_classifier_name_existing())
 
-        if psntr.is_classifier_name_existing() == False:
-            print("passing")
-        else:
-            print("fail")
-    test_is_classifier_name_existing()
-        
+        def test_get_metrics_message(self):
+            self.assertMultiLineEqual(self.presenter.get_metrics_message(), "accuracy = 100.000    ")
 
+        def test_get_header_message(self):
+            self.assertMultiLineEqual(self.presenter.get_header_message(), "Train/Test/Valid Epoch 667/1000: ")
 
-    def test_get_metrics_message():
-        info = classifier.Information(type="TESTING")
-        mtcs = classifier.Metrics()
-        mtcs.accuracy = 100
-        mtcs.loss = None
-        psntr = Performance_Presenter(info, mtcs)
-        
-        if psntr.get_metrics_message() == "accuracy = 100.000    ":
-            print("passing")
-        else:
-            print("fail")
-    test_get_metrics_message()
+        def test_get_message(self):
+            self.presenter.save_message()
+            target_message = "Train/Test/Valid Epoch 667/1000: accuracy = 100.000    "
+            self.assertTrue(self._is_target_message_in_log(target_message))
+
+        def test_save_classifier_name(self):
+            self.presenter.save_classifier_name()
+            target_message= f"{self.presenter.information.timestamp} \n"
+            self.assertTrue(self._is_target_message_in_log(target_message))
 
 
-    def test_get_header_message():
-        info = classifier.Information(type="TESTING")
-        info.epoch_quantity = 1000
-        info.epoch_number = 666
-        info.fold_number = 0
-        mtcs = classifier.Metrics()
-        psntr = Performance_Presenter(info, mtcs)
-        
-        if psntr.get_header_message() == "Train/Test/Valid Epoch 667/1000: ":
-            print("passing")
-        else:
-            print("fail")
-    test_get_header_message()'''
+
+
+        def tearDown(self):
+            del self.presenter
+
+
+
+
+
+        def _is_target_message_in_log(self, target_message):
+            with open(self.presenter.get_log_path(), 'r') as fp:
+                for line_number, line in enumerate(fp):
+                    if target_message in line:
+                        return True
+            return False 
+
+    unittest.main()
 
 
 
@@ -346,56 +347,6 @@ if __name__ == "__main__":
         
         presenter.show_figure()
     test_show_figure()'''
-        
-
-
-    '''def test_get_message():
-        information = classifier.Information(type="TESTING")
-        information.epoch_quantity = 1000
-        information.epoch_number = 666
-        information.fold_number = 0
-        metrics = classifier.Metrics()
-        metrics.accuracy = 100
-        metrics.loss = None
-        presenter = Performance_Presenter(information, metrics)
-        
-        presenter.save_message()
-
-        message= "Train/Test/Valid Epoch 667/1000: accuracy = 100.000    "
-        with open(os.path.join(os.getcwd(), 'results\log', presenter.info.type) +'.txt', 'r') as fp:
-            for line_number, line in enumerate(fp):
-                if message in line:
-                    message = "passing"
-        if message == "passing":
-            print("passing")
-        else:
-            print("fail")
-    test_get_message()'''
-
-
-
-    '''def test_save_classifier_name():
-        information = classifier.Information(type="TESTING")
-        information.epoch_quantity = 1000
-        information.epoch_number = 666
-        information.fold_number = 0
-        metrics = classifier.Metrics()
-        metrics.accuracy = 100
-        metrics.loss = None
-        presenter = Performance_Presenter(information, metrics)
-        
-        presenter.save_classifier_name()
-
-        message= f"{presenter.info.timestamp} \n"
-        with open(os.path.join(os.getcwd(), 'results\log', presenter.info.type) +'.txt', 'r') as fp:
-            for line_number, line in enumerate(fp):
-                if message in line:
-                    message = "passing"
-        if message == "passing":
-            print("passing")
-        else:
-            print("fail")
-    test_save_classifier_name()'''
 
 
 
@@ -442,7 +393,7 @@ if __name__ == "__main__":
     #######################
     # TEST tree presenter
     #######################
-    def test_build_the_tree():
+    '''def test_build_the_tree():
         dt = model.utils.DecisionTree(**{'max_leaf_impurity':0.2, # the maximum of entropy in each leaves
                                  'max_samples_leaf':2,   # the maximum required samples in each leaves
                                  'max_tree_depth':2})
@@ -453,4 +404,4 @@ if __name__ == "__main__":
         presenter = Tree_Presenter(dt)
 
         presenter.show_the_branch()
-    test_build_the_tree()
+    test_build_the_tree()'''

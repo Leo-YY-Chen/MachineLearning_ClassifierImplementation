@@ -35,13 +35,10 @@ features, labels = processor.preprocess(features, labels)
 
 factory = Classifier_Factory()
 hyperparameters = {'lr': 0.00001, 'epoch':5, 'loss_type':"L1"}
-classifier0 = factory.make_classifier("LinearClassifier")
 classifier1 = factory.make_classifier("LinearClassifier", **hyperparameters)
-
-
-
-
 classifier1.train(features, labels)
+
+
 
 
 
